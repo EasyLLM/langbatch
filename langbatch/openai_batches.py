@@ -10,5 +10,7 @@ class OpenAIChatCompletionBatch(OpenAIBatch, ChatCompletionBatch):
         OpenAIChatCompletionRequest(**request)
 
 class OpenAIEmbeddingBatch(OpenAIBatch, EmbeddingBatch):
+    _url: str = "/v1/embeddings"
+
     def _validate_request(self, request):
         OpenAIEmbeddingRequest(**request)

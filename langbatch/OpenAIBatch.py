@@ -26,6 +26,7 @@ class OpenAIBatch(Batch):
         """
         super().__init__(file)
         self.client = client
+        self.openai_batch_id = None
 
     def _upload_batch_file(self):
         # Upload the batch file to OpenAI
@@ -34,6 +35,9 @@ class OpenAIBatch(Batch):
             return batch_input_file.id
         
     def start(self):
+        if self.openai_batch_id is not None:
+            raise ValueError("Batch already started")
+        
         batch_input_file_id = self._upload_batch_file()
         batch = self.client.batches.create(
             input_file_id=batch_input_file_id,
@@ -43,6 +47,9 @@ class OpenAIBatch(Batch):
         self.openai_batch_id = batch.id
     
     def cancel(self):
+        if self.openai_batch_id is None:
+            raise ValueError("Batch not started")
+        
         batch = self.client.batches.cancel(self.openai_batch_id)
         if batch.status == "cancelling" or batch.status == "cancelled":
             return True
@@ -50,6 +57,9 @@ class OpenAIBatch(Batch):
             return False
         
     def status(self):
+        if self.openai_batch_id is None:
+            raise ValueError("Batch not started")
+        
         batch = self.client.batches.retrieve(self.openai_batch_id)
         return batch.status
 
