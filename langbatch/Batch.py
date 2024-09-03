@@ -18,23 +18,10 @@ class Batch(ABC):
         Initialize the Batch class.
         """
         self._file = file # OpenAI compatible batch file in jsonl format
-        self._id = uuid.uuid4()
 
         self._validate_requests() # Validate the requests in the batch file
 
-    def _write_batch_file(self, requests) -> Path:
-        """
-        Write the batch file to the directory.
-        """
-        self._id = uuid.uuid4()
-
-        # TODO: make the directory configurable
-        file_path = Path(f"{self._id}.jsonl")
-        with jsonlines.open(file_path, mode='w') as writer:
-            writer.write_all(requests)
-
-        return file_path
-
+    @classmethod
     def _create_batch_file(cls, key: str, data: List[Any], **kwargs) -> Path | None:
         """
         Create the batch file when given a list of items.
@@ -60,16 +47,24 @@ class Batch(ABC):
                         "body": body
                     }
                     requests.append(request)
-                except Exception as e:
-                    print(f"Error processing item {item}: {e}")  # Logging the exception
+                except:
+                    logging.warning(f"Error processing item {item}", exc_info= True)
                     continue
 
-            file_path = cls._write_batch_file(requests)
+            id = uuid.uuid4()
+
+            # TODO: make the directory configurable
+            file_path = Path(f"{id}.jsonl")
+            with jsonlines.open(file_path, mode='w') as writer:
+                writer.write_all(requests)
         except:
             logging.error(f"Error writing batch file", exc_info=True)
             return None
         
-        return file_path
+        if file_path is None:
+            raise ValueError("Failed to create batch. Check the input data.")
+        
+        return cls(file_path)
 
     @abstractmethod
     def _upload_batch_file(self):
@@ -77,14 +72,47 @@ class Batch(ABC):
 
     @abstractmethod
     def start(self):
+        """
+        Usage:
+        ```python
+        # create a batch
+        batch = OpenAIChatCompletionBatch(file)
+
+        # start the batch process
+        batch.start()
+        ```
+        """
         pass
 
     @abstractmethod
     def cancel(self):
+        """
+        Usage:
+        ```python
+        # create a batch and start batch process
+        batch = OpenAIChatCompletionBatch(file)
+        batch.start()
+
+        # cancel the batch process
+        batch.cancel()
+        ```
+        """
         pass
 
     @abstractmethod
     def status(self):
+        """
+        Usage:
+        ```python
+        # create a batch and start batch process
+        batch = OpenAIChatCompletionBatch(file)
+        batch.start()
+
+        # get the status of the batch process
+        status = batch.status()
+        print(status)
+        ```
+        """
         pass
 
     def _get_requests(self) -> List[Dict[str, Any]]:
@@ -116,8 +144,9 @@ class Batch(ABC):
         for request in self._get_requests():
             valid = True
             try:
-                self._validate_request(**request['body'])
+                self._validate_request(request['body'])
             except:
+                logging.info(f"Invalid request: {request}", exc_info=True)
                 valid = False
            
             if not valid:
@@ -126,10 +155,10 @@ class Batch(ABC):
         if len(invalid_requests) > 0:
             raise ValueError(f"Invalid requests: {invalid_requests}")
     
-    # Retry on rate limit fail cases
-    @abstractmethod
-    def _retry(self):
-        pass
+    # # Retry on rate limit fail cases
+    # @abstractmethod
+    # def _retry(self):
+    #     pass
 
     @abstractmethod
     def _download_results_file(self):
@@ -138,7 +167,24 @@ class Batch(ABC):
     # return results file in OpenAI compatible format
     @abstractmethod
     def get_results_file(self):
-        pass
+        """
+        Usage:
+        ```python
+        import jsonlines
+
+        # create a batch and start batch process
+        batch = OpenAIChatCompletionBatch(file)
+        batch.start()
+
+        if batch.status() == "completed":
+            # get the results file
+            results_file = batch.get_results_file()
+
+            with jsonlines.open(results_file) as reader:
+                for obj in reader:
+                    print(obj)
+        ```
+        """
 
     def _prepare_results(
         self, process_func

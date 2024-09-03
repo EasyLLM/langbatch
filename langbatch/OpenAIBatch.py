@@ -4,7 +4,26 @@ from langbatch.Batch import Batch
 class OpenAIBatch(Batch):
     _url: str = "/v1/chat/completions"
 
-    def __init__(self, file, client: OpenAI = OpenAI()):
+    def __init__(self, file: str, client: OpenAI = OpenAI()) -> None:
+        """
+        Initialize the ChatCompletionBatch class.
+
+        Args:
+            file (str): The path to the jsonl file in OpenAI batchformat.
+            client (OpenAI, optional): The OpenAI client to use. Defaults to OpenAI().
+
+        Usage:
+        ```python
+        batch = ChatCompletionBatch("path/to/file.jsonl")
+
+        # With custom OpenAI client
+        client = OpenAI(
+            api_key="sk-proj-...",
+            base_url="https://api.llamas.exchange/v1"
+        )
+        batch = OpenAIBatch("path/to/file.jsonl", client = client)
+        ```
+        """
         super().__init__(file)
         self.client = client
 
@@ -15,9 +34,6 @@ class OpenAIBatch(Batch):
             return batch_input_file.id
         
     def start(self):
-        """
-        Start the batch process by uploading the batch file and creating a new batch in OpenAI.
-        """
         batch_input_file_id = self._upload_batch_file()
         batch = self.client.batches.create(
             input_file_id=batch_input_file_id,
