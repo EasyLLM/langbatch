@@ -8,35 +8,32 @@ from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_tool_choice_option_param import ChatCompletionToolChoiceOptionParam
 
-class NotGiven:
-    def __bool__(self) -> Literal[False]:
-        return False
-
-    @override
-    def __repr__(self) -> str:
-        return "NOT_GIVEN"
-
-NOT_GIVEN = NotGiven()
-
 class OpenAIChatCompletionRequest(BaseModel):
     messages: Iterable[ChatCompletionMessageParam]
     model: Union[str, ChatModel]
-    frequency_penalty: Optional[float] | NotGiven = NOT_GIVEN
-    function_call: completion_create_params.FunctionCall | NotGiven = NOT_GIVEN
-    functions: Iterable[completion_create_params.Function] | NotGiven = NOT_GIVEN
-    logit_bias: Optional[Dict[str, int]] | NotGiven = NOT_GIVEN
-    logprobs: Optional[bool] | NotGiven = NOT_GIVEN
-    max_tokens: Optional[int] | NotGiven = NOT_GIVEN
-    n: Optional[int] | NotGiven = NOT_GIVEN
-    parallel_tool_calls: bool | NotGiven = NOT_GIVEN
-    presence_penalty: Optional[float] | NotGiven = NOT_GIVEN
-    response_format: completion_create_params.ResponseFormat | NotGiven = NOT_GIVEN
-    seed: Optional[int] | NotGiven = NOT_GIVEN
-    service_tier: Optional[Literal["auto", "default"]] | NotGiven = NOT_GIVEN
-    stop: Union[Optional[str], List[str]] | NotGiven = NOT_GIVEN
-    temperature: Optional[float] | NotGiven = NOT_GIVEN
-    tool_choice: ChatCompletionToolChoiceOptionParam | NotGiven = NOT_GIVEN
-    tools: Iterable[ChatCompletionToolParam] | NotGiven = NOT_GIVEN
-    top_logprobs: Optional[int] | NotGiven = NOT_GIVEN
-    top_p: Optional[float] | NotGiven = NOT_GIVEN
-    user: str | NotGiven = NOT_GIVEN
+    frequency_penalty: Optional[float] = None
+    function_call: Optional[completion_create_params.FunctionCall] = None
+    functions: Optional[Iterable[completion_create_params.Function]] = None
+    logit_bias: Optional[Dict[str, int]] = None
+    logprobs: Optional[bool] = None
+    max_tokens: Optional[int] = None
+    n: Optional[int] = None
+    parallel_tool_calls: Optional[bool] = None
+    presence_penalty: Optional[float] = None
+    response_format: Optional[completion_create_params.ResponseFormat] = None
+    seed: Optional[int] = None
+    service_tier: Optional[Literal["auto", "default"]] = None
+    stop: Optional[Union[str, List[str]]] = None
+    temperature: Optional[float] = None
+    tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None
+    tools: Optional[Iterable[ChatCompletionToolParam]] = None
+    top_logprobs: Optional[int] = None
+    top_p: Optional[float] = None
+    user: Optional[str] = None
+
+class OpenAIEmbeddingRequest(BaseModel):
+    input: Union[str, List[str], Iterable[int], Iterable[Iterable[int]]]
+    model: Union[str, Literal["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"]]
+    dimensions: Optional[int] = None
+    encoding_format: Optional[Union[str, Literal["float", "base64"]]] = None
+    user: Optional[str] = None
