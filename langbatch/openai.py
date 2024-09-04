@@ -1,5 +1,8 @@
 from openai import OpenAI
 from langbatch.Batch import Batch
+from langbatch.schemas import OpenAIChatCompletionRequest, OpenAIEmbeddingRequest
+from langbatch.ChatCompletionBatch import ChatCompletionBatch
+from langbatch.EmbeddingBatch import EmbeddingBatch
 
 class OpenAIBatch(Batch):
     _url: str = "/v1/chat/completions"
@@ -47,6 +50,17 @@ class OpenAIBatch(Batch):
         self.openai_batch_id = batch.id
     
     def cancel(self):
+        """
+        Usage:
+        ```python
+        # create a batch and start batch process
+        batch = OpenAIChatCompletionBatch(file)
+        batch.start()
+
+        # cancel the batch process
+        batch.cancel()
+        ```
+        """
         if self.openai_batch_id is None:
             raise ValueError("Batch not started")
         
@@ -77,3 +91,15 @@ class OpenAIBatch(Batch):
         file_path = self._download_results_file()
 
         return file_path
+    
+class OpenAIChatCompletionBatch(OpenAIBatch, ChatCompletionBatch):
+    _url: str = "/v1/chat/completions"
+
+    def _validate_request(self, request):
+        OpenAIChatCompletionRequest(**request)
+
+class OpenAIEmbeddingBatch(OpenAIBatch, EmbeddingBatch):
+    _url: str = "/v1/embeddings"
+
+    def _validate_request(self, request):
+        OpenAIEmbeddingRequest(**request)

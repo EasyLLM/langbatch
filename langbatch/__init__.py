@@ -1,5 +1,5 @@
 # export classes from the langbatch package
-from langbatch.openai_batches import OpenAIChatCompletionBatch
-from langbatch.openai_batches import OpenAIEmbeddingBatch
+from langbatch.openai import OpenAIChatCompletionBatch
+from langbatch.openai import OpenAIEmbeddingBatch
 
 __all__ = ["OpenAIChatCompletionBatch", "OpenAIEmbeddingBatch"]

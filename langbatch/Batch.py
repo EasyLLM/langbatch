@@ -85,21 +85,6 @@ class Batch(ABC):
         pass
 
     @abstractmethod
-    def cancel(self):
-        """
-        Usage:
-        ```python
-        # create a batch and start batch process
-        batch = OpenAIChatCompletionBatch(file)
-        batch.start()
-
-        # cancel the batch process
-        batch.cancel()
-        ```
-        """
-        pass
-
-    @abstractmethod
     def status(self):
         """
         Usage:
