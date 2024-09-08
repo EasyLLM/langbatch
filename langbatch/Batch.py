@@ -2,22 +2,82 @@
 Batch class is the base class for all batch classes.
 """
 
+import os
+import json
 import logging
 import uuid
+import shutil
 from abc import ABC, abstractmethod
 from typing import List, Any, Dict, Tuple
 from pathlib import Path
 
 import jsonlines
 
+# Default data path, can be overridden by environment variable
+DEFAULT_DATA_PATH = Path(__file__).parent / "data"
+DATA_PATH = DEFAULT_DATA_PATH
+
+print("Hi World")
+
+langbatch_data_path = os.environ.get("LANGBATCH_DATA_PATH")
+if langbatch_data_path:
+    try:
+        data_path = Path(langbatch_data_path)
+        test_file = data_path / "test.txt"
+        # test if the directory is writable
+        with open(test_file, 'w') as f:
+            f.write("test")
+
+        test_file.unlink(missing_ok=True)
+        DATA_PATH = langbatch_data_path
+    except:
+        logging.warning(f"Invalid data path: {langbatch_data_path}, using default data path: {DEFAULT_DATA_PATH}")
+    
+class BatchStorage(ABC):
+    @abstractmethod
+    def save(self, id: str, data_file: Path, meta_data: Dict[str, Any]):
+        pass
+
+    @abstractmethod
+    def load(self, id: str) -> Tuple[Path, Path]:
+        pass
+
+class FileBatchStorage(BatchStorage):
+    def __init__(self, directory: str = DATA_PATH):
+        self.saved_batches_directory = Path(directory) / "saved_batches"
+        self.saved_batches_directory.mkdir(exist_ok=True, parents=True)
+
+    def save(self, id: str, data_file: Path, meta_data: Dict[str, Any]):
+        """
+        Save the batch data and metadata to the storage.
+        """
+        with open(self.saved_batches_directory / f"{id}.json", 'w') as f:
+            json.dump(meta_data, f)
+
+        destination = self.saved_batches_directory / f"{id}.jsonl"
+        if not destination.exists(): 
+            # if the file does not exist, copy the file from the data_file
+            shutil.copy(data_file, destination)
+
+    def load(self, id: str) -> Tuple[Path, Path]:
+        data_file = self.saved_batches_directory / f"{id}.jsonl"
+        json_file = self.saved_batches_directory / f"{id}.json"
+
+        if not data_file.exists() or not json_file.exists():
+            raise ValueError(f"Batch with id {id} not found")
+        
+        return data_file, json_file
+
 class Batch(ABC):
     _url: str = ""
+    platform_batch_id: str | None = None
 
-    def __init__(self, file) -> None:
+    def __init__(self, file: str) -> None:
         """
         Initialize the Batch class.
         """
         self._file = file # OpenAI compatible batch file in jsonl format
+        self.id = str(uuid.uuid4())
 
         self._validate_requests() # Validate the requests in the batch file
 
@@ -51,10 +111,11 @@ class Batch(ABC):
                     logging.warning(f"Error processing item {item}", exc_info= True)
                     continue
 
-            id = uuid.uuid4()
+            batches_dir = Path(DATA_PATH) / "created_batches"
+            batches_dir.mkdir(exist_ok=True, parents=True)
 
-            # TODO: make the directory configurable
-            file_path = Path(f"{id}.jsonl")
+            id = str(uuid.uuid4())
+            file_path = batches_dir / f"{id}.jsonl"
             with jsonlines.open(file_path, mode='w') as writer:
                 writer.write_all(requests)
         except:
@@ -69,6 +130,56 @@ class Batch(ABC):
     @abstractmethod
     def _upload_batch_file(self):
         pass
+
+    @classmethod
+    def load(cls, id: str, storage: BatchStorage = FileBatchStorage()):
+        """
+        Load a batch from the storage and return a Batch object.
+
+        Args:
+            id (str): The id of the batch.
+            storage (BatchStorage, optional): The storage to load the batch from. Defaults to FileBatchStorage().
+
+        Returns:
+            Batch: The batch object.
+
+        Usage:
+        ```python
+        batch = OpenAIChatCompletionBatch.load("123", storage=FileBatchStorage("./data"))
+        ```
+        """
+        data_file, json_file = storage.load(id)
+
+        batch = cls(str(data_file))
+
+        with open(json_file, 'r') as f:
+            json_data = json.load(f)
+
+        batch.platform_batch_id = json_data['platform_batch_id']
+        batch.id = id
+
+        return batch
+
+    def save(self, storage: BatchStorage = FileBatchStorage()):
+        """
+        Save the batch to the storage.
+
+        Args:
+            storage (BatchStorage, optional): The storage to save the batch to. Defaults to FileBatchStorage().
+
+        Usage:
+        ```python
+        batch = OpenAIChatCompletionBatch(file)
+        batch.save()
+
+        # save the batch to file storage
+        batch.save(storage=FileBatchStorage("./data"))
+        ```
+        """
+        meta_data = {
+            "platform_batch_id": self.platform_batch_id
+        }
+        storage.save(self.id, Path(self._file), meta_data)
 
     @abstractmethod
     def start(self):
@@ -140,11 +251,6 @@ class Batch(ABC):
         if len(invalid_requests) > 0:
             raise ValueError(f"Invalid requests: {invalid_requests}")
     
-    # # Retry on rate limit fail cases
-    # @abstractmethod
-    # def _retry(self):
-    #     pass
-
     @abstractmethod
     def _download_results_file(self):
         pass
@@ -217,4 +323,13 @@ class Batch(ABC):
     # return results list
     @abstractmethod
     def get_results(self):
+        pass
+
+    @abstractmethod
+    def is_retryable_failure(self) -> bool:
+        pass
+
+    # Retry on rate limit fail cases
+    @abstractmethod
+    def retry(self):
         pass

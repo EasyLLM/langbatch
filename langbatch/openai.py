@@ -29,25 +29,27 @@ class OpenAIBatch(Batch):
         """
         super().__init__(file)
         self.client = client
-        self.openai_batch_id = None
 
     def _upload_batch_file(self):
         # Upload the batch file to OpenAI
         with open(self._file, "rb") as file:
             batch_input_file  = self.client.files.create(file=file, purpose="batch")
             return batch_input_file.id
-        
-    def start(self):
-        if self.openai_batch_id is not None:
-            raise ValueError("Batch already started")
-        
-        batch_input_file_id = self._upload_batch_file()
+
+    def _create_batch(self, input_file_id):
         batch = self.client.batches.create(
-            input_file_id=batch_input_file_id,
+            input_file_id=input_file_id,
             endpoint=self._url,
             completion_window= "24h"
         )
-        self.openai_batch_id = batch.id
+        self.platform_batch_id = batch.id
+
+    def start(self):
+        if self.platform_batch_id is not None:
+            raise ValueError("Batch already started")
+        
+        batch_input_file_id = self._upload_batch_file()
+        self._create_batch(batch_input_file_id)
     
     def cancel(self):
         """
@@ -61,27 +63,27 @@ class OpenAIBatch(Batch):
         batch.cancel()
         ```
         """
-        if self.openai_batch_id is None:
+        if self.platform_batch_id is None:
             raise ValueError("Batch not started")
         
-        batch = self.client.batches.cancel(self.openai_batch_id)
+        batch = self.client.batches.cancel(self.platform_batch_id)
         if batch.status == "cancelling" or batch.status == "cancelled":
             return True
         else:
             return False
         
     def status(self):
-        if self.openai_batch_id is None:
+        if self.platform_batch_id is None:
             raise ValueError("Batch not started")
         
-        batch = self.client.batches.retrieve(self.openai_batch_id)
+        batch = self.client.batches.retrieve(self.platform_batch_id)
         return batch.status
 
     def _download_results_file(self):
-        batch_object = self.client.batches.retrieve(self.openai_batch_id)
+        batch_object = self.client.batches.retrieve(self.platform_batch_id)
         file_response = self.client.files.content(batch_object.output_file_id)
         
-        file_path = f"{self.openai_batch_id}.jsonl"
+        file_path = f"{self.platform_batch_id}.jsonl"
         with open(file_path, "wb") as file:
             file.write(file_response.content)
 
@@ -92,6 +94,30 @@ class OpenAIBatch(Batch):
 
         return file_path
     
+    def _get_errors(self):
+        batch_object = self.client.batches.retrieve(self.platform_batch_id)
+        return batch_object.errors
+    
+    def is_retryable_failure(self) -> bool:
+        errors = self._get_errors()
+        if errors:
+            error = errors.data[0]['code']
+
+            if error == "token_limit_exceeded":
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def retry(self):
+        if self.platform_batch_id is None:
+            raise ValueError("Batch not started")
+        
+        batch = self.client.batches.retrieve(self.platform_batch_id)
+
+        self._create_batch(batch.input_file_id)
+
 class OpenAIChatCompletionBatch(OpenAIBatch, ChatCompletionBatch):
     _url: str = "/v1/chat/completions"
 
