@@ -44,6 +44,8 @@ class OpenAIBatch(Batch):
         )
         self.platform_batch_id = batch.id
 
+        self.save()
+
     def start(self):
         if self.platform_batch_id is not None:
             raise ValueError("Batch already started")
@@ -117,6 +119,8 @@ class OpenAIBatch(Batch):
         batch = self.client.batches.retrieve(self.platform_batch_id)
 
         self._create_batch(batch.input_file_id)
+
+    # TODO: handle error_file_id
 
 class OpenAIChatCompletionBatch(OpenAIBatch, ChatCompletionBatch):
     _url: str = "/v1/chat/completions"

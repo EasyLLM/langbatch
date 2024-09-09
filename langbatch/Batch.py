@@ -17,8 +17,6 @@ import jsonlines
 DEFAULT_DATA_PATH = Path(__file__).parent / "data"
 DATA_PATH = DEFAULT_DATA_PATH
 
-print("Hi World")
-
 langbatch_data_path = os.environ.get("LANGBATCH_DATA_PATH")
 if langbatch_data_path:
     try:
@@ -333,3 +331,15 @@ class Batch(ABC):
     @abstractmethod
     def retry(self):
         pass
+
+    @abstractmethod
+    def get_unsuccessful_requests(self):
+        pass
+
+    def get_requests_by_custom_ids(self, custom_ids: List[str]):
+        requests = []
+        with jsonlines.open(self._file) as reader:
+            for request in reader:
+                if request["custom_id"] in custom_ids:
+                    requests.append(request)
+        return requests

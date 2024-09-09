@@ -1,6 +1,7 @@
 from typing import Iterable, List, Dict, Any, Tuple
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from langbatch.Batch import Batch
+import jsonlines
 
 class ChatCompletionBatch(Batch):
     _url: str = "/v1/chat/completions"
@@ -53,3 +54,11 @@ class ChatCompletionBatch(Batch):
         """
         process_func = lambda result: {"choices": result['response']['body']['choices']}
         return self._prepare_results(process_func)
+    
+    def get_unsuccessful_requests(self):
+        custom_ids = []
+        _, unsuccessful_results = self.get_results()
+        for result in unsuccessful_results:
+            custom_ids.append(result["custom_id"])
+        
+        return self.get_requests_by_custom_ids(custom_ids)

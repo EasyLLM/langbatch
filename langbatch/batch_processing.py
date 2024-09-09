@@ -2,11 +2,11 @@ import logging
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Callable, Type
 from enum import Enum
-import time
+import asyncio
 
-from langbatch.openai import Batch
+from langbatch.Batch import Batch
 
 logger = logging.getLogger(__name__)
 
@@ -51,21 +51,29 @@ class FileBatchQueueStorage(BatchQueueStorage):
             logger.error(f"Error loading queue from file: {e}")
             raise
 
-class BatchQueueManager:
-    def __init__(self, batch_process_func, storage: BatchQueueStorage):
+class BatchHandler:
+    def __init__(
+            self, 
+            batch_process_func: Callable, 
+            batch_type: Type[Batch], 
+            storage: BatchQueueStorage = None,
+            wait_time: int = 3600
+        ):
         self.batch_process_func = batch_process_func
-        self.storage = storage
+        self.batch_type = batch_type
+        self.storage = storage or FileBatchQueueStorage("batch_queue.json")
         self.queues = self.storage.load()
+        self.wait_time = wait_time
 
-    def add_batch(self, batch_id: str):
+    async def add_batch(self, batch_id: str):
         self.queues["pending"].append(batch_id)
         self._save_queues()
         logger.info(f"Added batch {batch_id} to pending queue")
 
-    def start_batch(self, batch: Batch):
+    async def start_batch(self, batch: Batch):
         if batch.id in self.queues["pending"]:
             try:
-                batch.start()
+                await asyncio.to_thread(batch.start)
                 self.queues["processing"].append(batch.id)
                 logger.info(f"Moved batch {batch.id} from pending to processing queue")
             except:
@@ -77,29 +85,33 @@ class BatchQueueManager:
         else:
             logger.warning(f"Batch {batch.id} not found in pending queue")
 
-    def process_completed_batch(self, batch: Batch):
-        if batch.id in self.queues["processing"]:
-            try:
-                self.batch_process_func(batch)
-            except:
-                logger.error(f"Error processing completed batch {batch.id}", exc_info=True)
-            self.queues["processing"].remove(batch.id)
-            self._save_queues()
-            logger.info(f"Removed completed batch {batch.id} from processing queue")
-        else:
-            logger.warning(f"Completed batch {batch.id} not found in processing queue")
+    async def process_completed_batch(self, batch: Batch):
+        try:
+            logger.info(f"Processing completed batch {batch.id}")
+            if batch.id in self.queues["processing"]:
+                try:
+                    await asyncio.to_thread(self.batch_process_func, batch)
+                except:
+                    logger.error(f"Error processing completed batch {batch.id}", exc_info=True)
+                self.queues["processing"].remove(batch.id)
+                self._save_queues()
+                logger.info(f"Removed completed batch {batch.id} from processing queue")
+            else:
+                logger.warning(f"Completed batch {batch.id} not found in processing queue")
+        except:
+            logger.error(f"Error processing completed batch {batch.id}", exc_info=True)
 
-    def retry_batch(self, batch: Batch):
+    async def retry_batch(self, batch: Batch):
         if batch.id in self.queues["processing"]:
             try:
-                batch.retry()
+                await asyncio.to_thread(batch.retry)
             except:
                 logger.error(f"Error retrying batch {batch.id}", exc_info=True)
                 self.cancel_batch(batch.id)
         else:
             logger.warning(f"Batch {batch.id} not found in processing queue for retry")
 
-    def cancel_batch(self, batch_id: str):
+    async def cancel_batch(self, batch_id: str):
         for queue in self.queues.values():
             if batch_id in queue:
                 queue.remove(batch_id)
@@ -111,69 +123,51 @@ class BatchQueueManager:
     def _save_queues(self):
         self.storage.save(self.queues)
 
-class BatchProcessor:
-    def __init__(self, queue_manager: BatchQueueManager):
-        self.queue_manager = queue_manager
-
-    def process_batches(self):
+    async def run(self):
         while True:
+            logger.info("Handling batches")
             retried_batches = 0
-            for batch_id in self.queue_manager.queues["processing"]:
-                batch = Batch.load(batch_id)
-                status = batch.status()
-
+            for batch_id in self.queues["processing"]:
+                batch = self.batch_type.load(batch_id)
+                status = BatchStatus(await asyncio.to_thread(batch.status))
+                
                 if status == BatchStatus.COMPLETED:
-                    self._process_completed_batch(batch)
-                elif status == BatchStatus.FAILED or status == BatchStatus.EXPIRED:
+                    await self.process_completed_batch(batch)
+                elif status in [BatchStatus.FAILED, BatchStatus.EXPIRED]:
                     if retried_batches < 4:
-                        if status == BatchStatus.FAILED:    
-                            retried = self._handle_failed_batch(batch)
-                        else:
-                            retried = self._handle_expired_batch(batch)
-
+                        retried = await self._handle_failed_or_expired_batch(batch, status)
                         if retried:
                             retried_batches += 1
                 elif status in [BatchStatus.CANCELLING, BatchStatus.CANCELLED]:
-                    self.queue_manager.cancel_batch(batch_id)
+                    await self.cancel_batch(batch_id)
 
             if retried_batches < 4:
                 started_batches = 0
-                for batch_id in self.queue_manager.queues["pending"]:
-                    batch = Batch.load(batch_id)
-                    self.queue_manager.start_batch(batch)
+                for batch_id in self.queues["pending"]:
+                    batch = self.batch_type.load(batch_id)
+                    await self.start_batch(batch)
                     started_batches += 1
 
                     if (started_batches + retried_batches) == 4:
                         break
 
-            time.sleep(1800)  # Check every minute
+            await asyncio.sleep(self.wait_time)
 
-    def _process_completed_batch(self, batch: Batch):
+    async def _handle_failed_or_expired_batch(self, batch: 'Batch', status: BatchStatus):
         try:
-            logger.info(f"Processing completed batch {batch.id}")
-            self.queue_manager.process_completed_batch(batch.id)
-        except Exception as e:
-            logger.error(f"Error processing completed batch {batch.id}: {e}")
-
-    def _handle_failed_batch(self, batch: Batch):
-        try:
-            if batch.is_retryable_failure():
-                self.queue_manager.retry_batch(batch.id)
+            if status == BatchStatus.FAILED:
+                if batch.is_retryable_failure():
+                    await asyncio.to_thread(self.retry_batch, batch)
+                    return True
+                else:
+                    logger.warning(f"Batch {batch.id} failed due to non-token-limit error")
+                    await asyncio.to_thread(self.cancel_batch, batch.id)
+                    return False
+            elif status == BatchStatus.EXPIRED:
+                logger.info(f"Processing expired batch {batch.id}")
+                await asyncio.to_thread(self.retry_batch, batch)
                 return True
-            else:
-                logger.warning(f"Batch {batch.id} failed due to non-token-limit error")
-                self.queue_manager.cancel_batch(batch.id)
-                return False
         except Exception as e:
-            logger.error(f"Error handling failed batch {batch.id}: {e}")
-            return False
-
-    def _handle_expired_batch(self, batch: Batch):
-        try:
-            logger.info(f"Processing expired batch {batch.id}")
-            self.queue_manager.retry_batch(batch.id)
-            return True
-        except Exception as e:
-            logger.error(f"Error processing expired batch {batch.id}: {e}")
+            logger.error(f"Error handling {status.value} batch {batch.id}: {e}")
             return False
 
