@@ -9,7 +9,10 @@ readme = "README.md"
 python = "^3.11"
 openai = "^1.43.0"
 jsonlines = "^4.0.0"
-
+google-cloud-aiplatform = "^1.65.0"
+google-cloud-bigquery-storage = "^2.26.0"
+fastavro = "^1.9.7"
+redis = "^5.0.8"
 
 [build-system]
 requires = ["poetry-core"]

@@ -12,8 +12,6 @@ class OpenAIChatCompletionRequest(BaseModel):
     messages: Iterable[ChatCompletionMessageParam]
     model: Union[str, ChatModel]
     frequency_penalty: Optional[float] = None
-    function_call: Optional[completion_create_params.FunctionCall] = None
-    functions: Optional[Iterable[completion_create_params.Function]] = None
     logit_bias: Optional[Dict[str, int]] = None
     logprobs: Optional[bool] = None
     max_tokens: Optional[int] = None
@@ -37,3 +35,17 @@ class OpenAIEmbeddingRequest(BaseModel):
     dimensions: Optional[int] = None
     encoding_format: Optional[Union[str, Literal["float", "base64"]]] = None
     user: Optional[str] = None
+
+class VertexChatCompletionRequest(BaseModel):
+    messages: Iterable[ChatCompletionMessageParam]
+    model: Union[str, ChatModel]
+    frequency_penalty: Optional[float] = None
+    max_tokens: Optional[int] = None
+    n: Optional[int] = None
+    presence_penalty: Optional[float] = None
+    response_format: Optional[completion_create_params.ResponseFormat] = None
+    seed: Optional[int] = None
+    stop: Optional[Union[str, List[str]]] = None
+    temperature: Optional[float] = None
+    tools: Optional[Iterable[ChatCompletionToolParam]] = None
+    top_p: Optional[float] = None

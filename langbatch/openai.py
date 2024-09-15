@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openai import OpenAI
 from langbatch.Batch import Batch
 from langbatch.schemas import OpenAIChatCompletionRequest, OpenAIEmbeddingRequest
@@ -5,11 +7,15 @@ from langbatch.ChatCompletionBatch import ChatCompletionBatch
 from langbatch.EmbeddingBatch import EmbeddingBatch
 
 class OpenAIBatch(Batch):
+    """
+    OpenAIBatch is a base class for OpenAI batch classes.
+    Implements the Batch class for OpenAI API.
+    """
     _url: str = "/v1/chat/completions"
 
     def __init__(self, file: str, client: OpenAI = OpenAI()) -> None:
         """
-        Initialize the ChatCompletionBatch class.
+        Initialize the OpenAIBatch class.
 
         Args:
             file (str): The path to the jsonl file in OpenAI batchformat.
@@ -30,6 +36,13 @@ class OpenAIBatch(Batch):
         super().__init__(file)
         self.client = client
 
+    @classmethod
+    def _get_init_args(cls, meta_data) -> Dict[str, Any]:
+        return {}
+    
+    def _create_meta_data(self) -> Dict[str, Any]:
+        return {}
+    
     def _upload_batch_file(self):
         # Upload the batch file to OpenAI
         with open(self._file, "rb") as file:
@@ -74,7 +87,7 @@ class OpenAIBatch(Batch):
         else:
             return False
         
-    def status(self):
+    def get_status(self):
         if self.platform_batch_id is None:
             raise ValueError("Batch not started")
         
@@ -85,14 +98,9 @@ class OpenAIBatch(Batch):
         batch_object = self.client.batches.retrieve(self.platform_batch_id)
         file_response = self.client.files.content(batch_object.output_file_id)
         
-        file_path = f"{self.platform_batch_id}.jsonl"
+        file_path = self._create_results_file_path()
         with open(file_path, "wb") as file:
             file.write(file_response.content)
-
-        return file_path
-
-    def get_results_file(self):
-        file_path = self._download_results_file()
 
         return file_path
     
@@ -123,12 +131,32 @@ class OpenAIBatch(Batch):
     # TODO: handle error_file_id
 
 class OpenAIChatCompletionBatch(OpenAIBatch, ChatCompletionBatch):
+    """
+    OpenAIChatCompletionBatch is a class for OpenAI chat completion batches.
+    Can be used for batch processing with gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4 models
+    
+    Usage:
+    ```python
+    batch = OpenAIChatCompletionBatch("path/to/file.jsonl")
+    batch.start()
+    ```
+    """
     _url: str = "/v1/chat/completions"
 
     def _validate_request(self, request):
         OpenAIChatCompletionRequest(**request)
 
 class OpenAIEmbeddingBatch(OpenAIBatch, EmbeddingBatch):
+    """
+    OpenAIEmbeddingBatch is a class for OpenAI embedding batches.
+    Can be used for batch processing with text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002 models
+
+    Usage:
+    ```python
+    batch = OpenAIEmbeddingBatch("path/to/file.jsonl")
+    batch.start()
+    ```
+    """
     _url: str = "/v1/embeddings"
 
     def _validate_request(self, request):

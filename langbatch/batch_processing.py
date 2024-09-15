@@ -21,15 +21,73 @@ class BatchStatus(Enum):
     CANCELLED = "cancelled"
 
 class BatchQueueStorage(ABC):
+    """
+    Abstract class for batch queue storage.
+    Implementations should provide a way to save and load batch queues.
+
+    Used in BatchHandler to save and load the batch queues.
+
+    Usage:
+    ```python
+    import asyncio
+
+    # Using default FileBatchQueueStorage
+    storage = FileBatchQueueStorage("batch_queue.json")
+    batch_handler = BatchHandler(
+        batch_process_func=process_batch,
+        batch_type=OpenAIChatCompletionBatch,
+        storage=storage
+    )
+    asyncio.create_task(batch_handler.run())
+
+    # With custom storage
+    class MyCustomBatchQueueStorage(BatchQueueStorage):
+        def save(self, queue: Dict[str, List[str]]):
+            # Custom save logic
+
+        def load(self) -> Dict[str, List[str]]:
+            # Custom load logic
+
+    custom_storage = MyCustomBatchQueueStorage()
+    batch_handler = BatchHandler(
+        batch_process_func=process_batch,
+        batch_type=OpenAIChatCompletionBatch,
+        storage=custom_storage
+    )
+    asyncio.create_task(batch_handler.run())
+    ```
+    """
     @abstractmethod
     def save(self, queue: Dict[str, List[str]]):
+        """
+        Save the batch queue.
+        """
         pass
 
     @abstractmethod
     def load(self) -> Dict[str, List[str]]:
+        """
+        Load the batch queue.
+        """
         pass
 
 class FileBatchQueueStorage(BatchQueueStorage):
+    """
+    Batch queue storage that saves the queue to a file.
+
+    Usage:
+    ```python
+    storage = FileBatchQueueStorage("batch_queue.json")
+
+    batch_handler = BatchHandler(
+        batch_process_func=process_batch,
+        batch_type=OpenAIChatCompletionBatch,
+        storage=storage
+    )
+
+    asyncio.create_task(batch_handler.run())
+    ```
+    """
     def __init__(self, file_path: str):
         self.file_path = file_path
 
@@ -52,6 +110,38 @@ class FileBatchQueueStorage(BatchQueueStorage):
             raise
 
 class BatchHandler:
+    """
+    Batch handler that handles the batches added to the queue.
+    It handles:
+    * starting batches
+    * checking the status of batches
+    * processing completed batches
+    * retrying failed batches
+    * cancelling non retryable failed batches
+
+    Usage:
+    ```python
+    # Create a batch handler process
+    batch_handler = BatchHandler(
+        batch_process_func=process_batch,
+        batch_type=OpenAIChatCompletionBatch
+    )
+    asyncio.create_task(batch_handler.run())
+
+    # Add batches to the queue
+    await batch_handler.add_batch("123")
+    await batch_handler.add_batch("456")
+
+    # With custom storage
+    custom_storage = MyCustomBatchQueueStorage()
+    batch_handler = BatchHandler(
+        batch_process_func=process_batch,
+        batch_type=OpenAIChatCompletionBatch,
+        storage=custom_storage
+    )
+    asyncio.create_task(batch_handler.run())
+    ```
+    """
     def __init__(
             self, 
             batch_process_func: Callable, 
@@ -91,6 +181,7 @@ class BatchHandler:
             if batch.id in self.queues["processing"]:
                 try:
                     await asyncio.to_thread(self.batch_process_func, batch)
+                    logger.info(f"Processed batch {batch.id}")
                 except:
                     logger.error(f"Error processing completed batch {batch.id}", exc_info=True)
                 self.queues["processing"].remove(batch.id)
@@ -104,6 +195,7 @@ class BatchHandler:
     async def retry_batch(self, batch: Batch):
         if batch.id in self.queues["processing"]:
             try:
+                logger.info(f"Retrying batch {batch.id}")
                 await asyncio.to_thread(batch.retry)
             except:
                 logger.error(f"Error retrying batch {batch.id}", exc_info=True)
@@ -160,11 +252,10 @@ class BatchHandler:
                     await asyncio.to_thread(self.retry_batch, batch)
                     return True
                 else:
-                    logger.warning(f"Batch {batch.id} failed due to non-token-limit error")
+                    logger.warning(f"Batch {batch.id} failed due to non token-limit error")
                     await asyncio.to_thread(self.cancel_batch, batch.id)
                     return False
             elif status == BatchStatus.EXPIRED:
-                logger.info(f"Processing expired batch {batch.id}")
                 await asyncio.to_thread(self.retry_batch, batch)
                 return True
         except Exception as e:

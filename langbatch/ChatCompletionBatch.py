@@ -4,6 +4,10 @@ from langbatch.Batch import Batch
 import jsonlines
 
 class ChatCompletionBatch(Batch):
+    """
+    ChatCompletionBatch is a base class for chat completion batch classes.
+    Utilizes OpenAI Chat Completion API format as the standard request format.
+    """
     _url: str = "/v1/chat/completions"
 
     def __init__(self, file) -> None:
@@ -54,11 +58,3 @@ class ChatCompletionBatch(Batch):
         """
         process_func = lambda result: {"choices": result['response']['body']['choices']}
         return self._prepare_results(process_func)
-    
-    def get_unsuccessful_requests(self):
-        custom_ids = []
-        _, unsuccessful_results = self.get_results()
-        for result in unsuccessful_results:
-            custom_ids.append(result["custom_id"])
-        
-        return self.get_requests_by_custom_ids(custom_ids)

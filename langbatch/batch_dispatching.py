@@ -1,37 +1,40 @@
 import asyncio
 import time
-from typing import List, Any
 import logging
-from uuid import uuid4
-from collections import deque
 
 from langbatch.Batch import Batch
 from langbatch.batch_processing import BatchHandler
+from langbatch.request_queues import RequestQueue
 
 logger = logging.getLogger(__name__)
 
-class RequestQueue:
-    def __init__(self):
-        self.queue = deque()
-
-    def add_requests(self, requests: List[Any]):
-        self.queue.extend(requests)
-        logger.info(f"Added {len(requests)} requests to queue. Queue size: {len(self.queue)}")
-
-    def get_requests(self, count: int) -> List[Any]:
-        if count > len(self.queue):
-            count = len(self.queue)
-        return [self.queue.popleft() for _ in range(count)]
-
-    def __len__(self):
-        return len(self.queue)
-
 class BatchDispatcher:
-    def __init__(self, batch_handler: BatchHandler, queue_threshold: int = 50000, time_threshold: int = 3600 * 2, **kwargs):
+    """
+    Batch dispatcher creates batches from requests in the queue and dispatches them to the batch handler.
+
+    In time intervals, it checks the queue size and time threshold, and creates a batch and dispatches it to the batch handler.
+
+    Usage:
+    ```python
+    # Create a batch dispatcher
+    batch_dispatcher = BatchDispatcher(
+        batch_handler=batch_handler,
+        queue=request_queue,
+        queue_threshold=50000,
+        time_threshold=3600 * 2,
+        **kwargs
+    )
+
+    asyncio.create_task(batch_dispatcher.run())
+    ```
+    """
+
+    def __init__(self, batch_handler: BatchHandler, queue: RequestQueue, queue_threshold: int = 50000, time_threshold: int = 3600 * 2, time_interval: int = 600, **kwargs):
         self.batch_handler = batch_handler
-        self.queue = RequestQueue()
+        self.queue = queue
         self.queue_threshold = queue_threshold
         self.time_threshold = time_threshold
+        self.time_interval = time_interval
         self.last_batch_time = time.time()
         self.kwargs = kwargs
 
@@ -54,6 +57,8 @@ class BatchDispatcher:
             else:
                 logger.info("No batch conditions met, waiting for next check")
                 break
+
+            await asyncio.sleep(self.time_interval)
 
     async def _create_and_dispatch_batch(self):
         try:
