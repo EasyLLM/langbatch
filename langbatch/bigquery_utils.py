@@ -2,6 +2,7 @@ import logging
 from google.cloud import bigquery_storage_v1
 from google.cloud.bigquery_storage_v1 import types, writer
 from google.protobuf import descriptor_pb2
+from google.cloud import bigquery
 from langbatch.record_pb2 import BatchRecord
 
 def create_row_data(custom_id: str, request: str):
@@ -70,6 +71,11 @@ def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data
     except:
         logging.error("Error writing data to BigQuery", exc_info=True)
         return False
+
+def drop_table(project_id: str, dataset_id: str, table_id: str):
+    client = bigquery.Client()
+    table_id = f"{project_id}.{dataset_id}.{table_id}"
+    client.delete_table(table_id, not_found_ok=True)
 
 def read_data_from_bigquery(project_id: str, dataset_id: str, table_id: str):
     client = bigquery_storage_v1.BigQueryReadClient()

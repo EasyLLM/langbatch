@@ -15,14 +15,31 @@ class EmbeddingBatch(Batch):
         super().__init__(file)
 
     @classmethod
-    def create(cls, data: List[str], **kwargs) -> "EmbeddingBatch":
+    def create(cls, data: List[str], request_kwargs: Dict = {}, batch_kwargs: Dict = {}) -> "EmbeddingBatch":
         """
         Create an embedding batch when given a list of texts.
 
-        kwargs is used to pass in the parameters for the API call. 
-        Ex. model, encoding_format, etc.
+        Args:
+            data (List[str]): A list of texts to be embedded.
+            request_kwargs (Dict): Additional keyword arguments for the API call. Ex. model, encoding_format, etc.
+            batch_kwargs (Dict): Additional keyword arguments for the batch class.
+
+        Returns:
+            EmbeddingBatch: An instance of the EmbeddingBatch class.
+
+        Raises:
+            ValueError: If the input data is invalid.
+
+        Usage:
+        ```python
+        batch = OpenAIEmbeddingBatch.create([
+            "Hello world", 
+            "Hello LangBatch"
+        ], 
+            request_kwargs={"model": "text-embedding-3-small"})
+        ```
         """
-        return cls._create_batch_file("input", data, **kwargs)
+        return cls._create_batch_file("input", data, request_kwargs, batch_kwargs)
     
     def get_results(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]] | Tuple[None, None]:
         """

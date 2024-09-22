@@ -1,6 +1,7 @@
 import asyncio
 import time
 import logging
+from typing import Dict
 
 from langbatch.Batch import Batch
 from langbatch.batch_processing import BatchHandler
@@ -22,27 +23,27 @@ class BatchDispatcher:
         queue=request_queue,
         queue_threshold=50000,
         time_threshold=3600 * 2,
-        **kwargs
+        request_kwargs=request_kwargs
     )
 
     asyncio.create_task(batch_dispatcher.run())
     ```
     """
 
-    def __init__(self, batch_handler: BatchHandler, queue: RequestQueue, queue_threshold: int = 50000, time_threshold: int = 3600 * 2, time_interval: int = 600, **kwargs):
+    def __init__(self, batch_handler: BatchHandler, queue: RequestQueue, queue_threshold: int = 50000, time_threshold: int = 3600 * 2, time_interval: int = 600, request_kwargs: Dict = {}):
         self.batch_handler = batch_handler
         self.queue = queue
         self.queue_threshold = queue_threshold
         self.time_threshold = time_threshold
         self.time_interval = time_interval
         self.last_batch_time = time.time()
-        self.kwargs = kwargs
+        self.request_kwargs = request_kwargs
 
     async def run(self):
         while True:
             logger.info("Running batch dispatcher")
             await self._check_batch_conditions()
-            await asyncio.sleep(self.time_threshold)
+            await asyncio.sleep(self.time_interval)
 
     async def _check_batch_conditions(self):
         logger.info("Checking queue for batch creation")
@@ -58,14 +59,13 @@ class BatchDispatcher:
                 logger.info("No batch conditions met, waiting for next check")
                 break
 
-            await asyncio.sleep(self.time_interval)
-
     async def _create_and_dispatch_batch(self):
         try:
             logger.info("Creating batch")
             requests = await asyncio.to_thread(self.queue.get_requests, self.queue_threshold)
             batch_class = self.batch_handler.batch_type
-            batch = await asyncio.to_thread(batch_class.create, requests, **self.kwargs)
+            batch_kwargs = self.batch_handler.batch_kwargs
+            batch = await asyncio.to_thread(batch_class.create, requests, self.request_kwargs, batch_kwargs)
             self.last_batch_time = time.time()
             await self._dispatch_batch(batch)
         except ValueError as e:

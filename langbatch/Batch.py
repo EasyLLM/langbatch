@@ -34,20 +34,17 @@ class Batch(ABC):
         self._validate_requests() # Validate the requests in the batch file
 
     @classmethod
-    def _create_batch_file(cls, key: str, data: List[Any], **kwargs) -> Path | None:
+    def _create_batch_file(cls, key: str, data: List[Any], request_kwargs: Dict = {}, batch_kwargs: Dict = {}) -> Path | None:
         """
         Create the batch file when given a list of items.
         For Chat Completions, this would be a list of messages.
         For Embeddings, this would be a list of texts.
-
-        kwargs is used to pass in the parameters for the API call. 
-        Ex. model, temperature, etc.
         """
         requests = []
         try:
             for item in data:
                 try:
-                    body = kwargs.copy()  # Copy kwargs to avoid mutation
+                    body = request_kwargs.copy()  # Copy kwargs to avoid mutation
                     custom_id = str(uuid.uuid4())
 
                     body[key] = item
@@ -77,7 +74,7 @@ class Batch(ABC):
         if file_path is None:
             raise ValueError("Failed to create batch. Check the input data.")
         
-        return cls(file_path)
+        return cls(file_path, **batch_kwargs)
 
     @classmethod
     @abstractmethod

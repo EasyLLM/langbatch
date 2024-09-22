@@ -11,16 +11,20 @@ class ChatCompletionBatch(Batch):
     _url: str = "/v1/chat/completions"
 
     def __init__(self, file) -> None:
+        """
+        Initialize the ChatCompletionBatch class.
+        """
         super().__init__(file)
 
     @classmethod
-    def create(cls, data: List[Iterable[ChatCompletionMessageParam]], **kwargs) -> "ChatCompletionBatch":
+    def create(cls, data: List[Iterable[ChatCompletionMessageParam]], request_kwargs: Dict = {}, batch_kwargs: Dict = {}) -> "ChatCompletionBatch":
         """
         Create a chat completion batch when given a list of messages.
 
         Args:
             data (List[Iterable[ChatCompletionMessageParam]]): A list of messages to be sent to the API.
-            **kwargs: Additional keyword arguments for the API call. Ex. model, messages, etc.
+            request_kwargs (Dict): Additional keyword arguments for the API call. Ex. model, messages, etc.
+            batch_kwargs (Dict): Additional keyword arguments for the batch class. Ex. gcp_project, etc. for VertexChatCompletionBatch.
 
         Returns:
             ChatCompletionBatch: An instance of the ChatCompletionBatch class.
@@ -30,14 +34,26 @@ class ChatCompletionBatch(Batch):
 
         Usage:
         ```python
-        batch = ChatCompletionBatch.create([
+        batch = OpenAIChatCompletionBatch.create([
                 [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is the capital of France?"}],
                 [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is the capital of Germany?"}]
             ],
-            model="gpt-4o")
+            request_kwargs={"model": "gpt-4o"})
+
+        # For VertexAI
+        batch = VertexChatCompletionBatch.create([
+                [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is the capital of France?"}],
+                [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is the capital of Germany?"}]
+            ],
+            request_kwargs={"model": "gemini-1.5-flash-001"},
+            batch_kwargs={
+                "gcp_project": "your-gcp-project", 
+                "bigquery_input_dataset": "your-bigquery-input-dataset", 
+                "bigquery_output_dataset": "your-bigquery-output-dataset"
+            })
         ```
         """
-        return cls._create_batch_file("messages", data, **kwargs)
+        return cls._create_batch_file("messages", data, request_kwargs, batch_kwargs)
         
     def get_results(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]] | Tuple[None, None]:
         """

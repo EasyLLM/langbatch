@@ -9,7 +9,7 @@ from google.cloud import bigquery
 
 from langbatch.Batch import Batch
 from langbatch.ChatCompletionBatch import ChatCompletionBatch
-from langbatch.bigquery_utils import write_data_to_bigquery, read_data_from_bigquery
+from langbatch.bigquery_utils import write_data_to_bigquery, read_data_from_bigquery, drop_table
 from langbatch.schemas import VertexChatCompletionRequest
 
 vertex_state_map = {
@@ -89,11 +89,20 @@ class VertexBatch(Batch):
 
         table_id = f"{self.gcp_project}.{dataset_id}.{self.id}"
         table = bigquery.Table(table_id, schema=schema)
-        table = client.create_table(table)
+        
+        try:
+            table = client.create_table(table)
+        except Exception as e:
+            if "Already Exists:" in str(e):
+                drop_table(self.gcp_project, dataset_id, self.id)
+                table = client.create_table(table)
+            else:
+                raise e
+            
         return table.table_id
 
     @abstractmethod
-    def _convert_request(self, request: dict) -> str:
+    def _convert_request(self, req: dict) -> str:
         pass
 
     def _prepare_data(self):
@@ -152,7 +161,9 @@ class VertexBatch(Batch):
         data = read_data_from_bigquery(self.gcp_project, self.bigquery_output_dataset, self.id)
         responses = []
         for element in data:
-            responses.append(self._convert_response(element))
+            response = self._convert_response(element)
+            if response["response"] is not None:
+                responses.append(response)
 
         file_path = self._create_results_file_path()
         with jsonlines.open(file_path, mode='w') as writer:
@@ -202,7 +213,7 @@ class VertexChatCompletionBatch(VertexBatch, ChatCompletionBatch):
     """
     _url: str = "/v1/chat/completions"
 
-    def _convert_request(self, request: dict) -> str:
+    def _convert_request(self, req: dict) -> str:
         custom_schema = {
             "contents": [],
             "systemInstruction": None,
@@ -210,7 +221,7 @@ class VertexChatCompletionBatch(VertexBatch, ChatCompletionBatch):
             "generationConfig": {}
         }
 
-        request = VertexChatCompletionRequest(**request)
+        request = VertexChatCompletionRequest(**req)
 
         # Convert messages
         for message in request.messages:
@@ -273,16 +284,17 @@ class VertexChatCompletionBatch(VertexBatch, ChatCompletionBatch):
                 "text": "text/plain",
                 "json_schema": "application/json"
             }
-            custom_schema["responseMimeType"] = mime_type_map[request.response_format.type]
 
-            if request.response_format.type == "json_schema" and request.response_format.json_schema:
-                custom_schema["responseSchema"] = request.response_format.json_schema
+            gen_config["responseMimeType"] = mime_type_map[request.response_format["type"]]
+
+            if request.response_format["type"] == "json_schema" and request.response_format["json_schema"]:
+                gen_config["responseSchema"] = request.response_format["json_schema"]
 
                 # Check for single enum property to use text/x.enum mime type
                 data = json.loads(request.response_format.json_schema.schema)
                 concrete_types = ["string", "number", "integer", "boolean"]
                 if data.get("type") in concrete_types and len(data.get("enum", [])) == 0:
-                    custom_schema["responseMimeType"] = "text/x.enum"
+                    gen_config["responseMimeType"] = "text/x.enum"
 
 
         gen_config = {k: v for k, v in gen_config.items() if v is not None}
@@ -294,73 +306,91 @@ class VertexChatCompletionBatch(VertexBatch, ChatCompletionBatch):
         # Parse the input JSON
         response_data = json.loads(response["response"])
 
-        # Extract relevant information
-        candidates = response_data["candidates"]
-        tokens = response_data["usageMetadata"]
-
-        # Create the choices array
-        choices = []
-        for index, candidate in enumerate(candidates):
-            choice = {
-                "index": index,
-                "logprobs": None,
-                "finish_reason": candidate["finishReason"].lower()
-            }
-            if candidate.get("function_calls", None):
-                tool_calls = []
-                for function_call in candidate["function_calls"]:
-                    tool_call = {
-                        "type": "function",
-                        "function": {
-                            "name": function_call.get("name"),
-                            "arguments": function_call.get("arguments", "{}")
-                        }
-                    }
-                    tool_calls.append(tool_call)
-                message = {
-                    "role": "tool",
-                    "content": "",
-                    "tool_calls": tool_calls
-                }
+        status = response["status"]
+        if status != "":
+            if "Bad Request: " in status:
+                error_data = json.loads(status.split("Bad Request: ")[1])
             else:
-                content = candidate["content"]["parts"][0]["text"]
-                message = {
-                    "role": "assistant",
-                    "content": content
+                error_data = {
+                    "message": status,
+                    "code": 500
                 }
 
-            choice["message"] = message
-            
-            choices.append(choice)
-
-        # Create the body
-        body = {
-            "id": f'{response["key"]}',
-            "object": "chat.completion",
-            "created": int(response["processed_time"].timestamp()),
-            "model": self.model_name,
-            "system_fingerprint": None,
-            "choices": choices,
-            "usage": {
-                "prompt_tokens": tokens["promptTokenCount"],
-                "completion_tokens": tokens["candidatesTokenCount"],
-                "total_tokens": tokens["totalTokenCount"]
+            error = {
+                "message": error_data["error"]["message"],
+                "code": error_data["error"]["code"]
             }
-        }
 
-        status_map = {
-            "": 200
-        }
+            res = None
+        else:
+            # Extract relevant information
+            candidates = response_data["candidates"]
+            tokens = response_data["usageMetadata"]
+
+            # Create the choices array
+            choices = []
+            for index, candidate in enumerate(candidates):
+                choice = {
+                    "index": index,
+                    "logprobs": None,
+                    "finish_reason": candidate["finishReason"].lower()
+                }
+                if candidate.get("function_calls", None):
+                    tool_calls = []
+                    for function_call in candidate["function_calls"]:
+                        tool_call = {
+                            "type": "function",
+                            "function": {
+                                "name": function_call.get("name"),
+                                "arguments": function_call.get("arguments", "{}")
+                            }
+                        }
+                        tool_calls.append(tool_call)
+                    message = {
+                        "role": "tool",
+                        "content": "",
+                        "tool_calls": tool_calls
+                    }
+                else:
+                    content = candidate["content"]["parts"][0]["text"]
+                    message = {
+                        "role": "assistant",
+                        "content": content
+                    }
+
+                choice["message"] = message
+                
+                choices.append(choice)
+
+            # Create the body
+            body = {
+                "id": f'{response["custom_id"]}',
+                "object": "chat.completion",
+                "created": int(response["processed_time"].timestamp()),
+                "model": self.model_name,
+                "system_fingerprint": None,
+                "choices": choices,
+                "usage": {
+                    "prompt_tokens": tokens["promptTokenCount"],
+                    "completion_tokens": tokens["candidatesTokenCount"],
+                    "total_tokens": tokens["totalTokenCount"]
+                }
+            }
+
+            res = {
+                "request_id": response["custom_id"],
+                "status_code": 200,
+                "body": body,
+            }
+
+            error = None
+
         # create output
         output = {
-            "id": f'{response["key"]}',
+            "id": f'{response["custom_id"]}',
             "custom_id": response["custom_id"],
-            "response": {
-                "request_id": response["key"],
-                "status_code": status_map.get(response["status"], 500),
-                "body": body,
-            },
-            "error": None
+            "response": res,
+            "error": error
         }
 
         return output

@@ -2,6 +2,7 @@ import logging
 from typing import List, Any
 from collections import deque
 from abc import ABC, abstractmethod
+import json
 
 import redis
 
@@ -81,7 +82,7 @@ class RedisRequestQueue:
     def add_requests(self, requests: List[Any]):
         count = len(requests)
         for request in requests:
-            self.redis_client.rpush(self.queue_name, str(request))
+            self.redis_client.rpush(self.queue_name, str(json.dumps(request)))
         logging.debug(f"Added {count} requests to queue.")
 
     def get_requests(self, count: int) -> List[Any]:
@@ -96,7 +97,7 @@ class RedisRequestQueue:
         if items is None:
             return []
         
-        results = [item.decode('utf-8') for item in items]
+        results = [json.loads(item.decode('utf-8')) for item in items]
 
         logging.debug(f"Retrieved {len(results)} requests from queue.")
         return results

@@ -147,14 +147,16 @@ class BatchHandler:
             batch_process_func: Callable, 
             batch_type: Type[Batch], 
             storage: BatchQueueStorage = None,
-            wait_time: int = 3600
+            wait_time: int = 3600,
+            batch_kwargs: Dict = {}
         ):
         self.batch_process_func = batch_process_func
         self.batch_type = batch_type
         self.storage = storage or FileBatchQueueStorage("batch_queue.json")
         self.queues = self.storage.load()
         self.wait_time = wait_time
-
+        self.batch_kwargs = batch_kwargs
+        
     async def add_batch(self, batch_id: str):
         self.queues["pending"].append(batch_id)
         self._save_queues()
@@ -221,7 +223,7 @@ class BatchHandler:
             retried_batches = 0
             for batch_id in self.queues["processing"]:
                 batch = self.batch_type.load(batch_id)
-                status = BatchStatus(await asyncio.to_thread(batch.status))
+                status = BatchStatus(await asyncio.to_thread(batch.get_status))
                 
                 if status == BatchStatus.COMPLETED:
                     await self.process_completed_batch(batch)
