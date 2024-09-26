@@ -25,7 +25,7 @@ class EmbeddingBatch(Batch):
             batch_kwargs (Dict): Additional keyword arguments for the batch class.
 
         Returns:
-            EmbeddingBatch: An instance of the EmbeddingBatch class.
+            An instance of the EmbeddingBatch class.
 
         Raises:
             ValueError: If the input data is invalid.
@@ -46,10 +46,7 @@ class EmbeddingBatch(Batch):
         Retrieve the results of the embedding batch.
 
         Returns:
-            Tuple[List[Dict[str, Any]], List[Dict[str, Any]]] | Tuple[None, None]: 
-            A tuple containing successful and unsuccessful results.
-            - Successful results: A list of dictionaries with "embedding" and "custom_id" keys.
-            - Unsuccessful results: A list of dictionaries with "error" and "custom_id" keys.
+            A tuple containing successful and unsuccessful results. Successful results: A list of dictionaries with "embedding" and "custom_id" keys. Unsuccessful results: A list of dictionaries with "error" and "custom_id" keys.
 
         Usage:
         ```python

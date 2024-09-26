@@ -31,8 +31,8 @@ nav:
   - 🛠️ How-to Guides: 
     - howtos/index.md
     - Sample API Service - Stream to Batch pipeline: howtos/batch_dispatcher_service.md
-  - 📖 References: 
-    - references/index.md
+    - Stream to Batch pipeline with RedisRequestQueue: howtos/batch_dispatcher_service_redis.md
+  - 📖 References:
     - Batch: references/Batch.md
     - ChatCompletionBatch: references/ChatCompletion.md
     - EmbeddingBatch: references/Embedding.md
@@ -42,7 +42,7 @@ nav:
         - OpenAIEmbeddingBatch: references/providers/OpenAI/OpenAIEmbeddingBatch.md
       - VertexAI: 
         - VertexChatCompletionBatch: references/providers/VertexAI/VertexAIChatCompletionBatch.md
-    - Utils:
+    - Pipeline Utils:
       - BatchStorage: references/utils/BatchStorage.md
       - BatchQueueStorage: references/utils/BatchQueueStorage.md
       - BatchHandler: references/utils/BatchHandler.md
@@ -53,7 +53,7 @@ nav:
 # Material-Docs Theme
 theme:
   name: material
-  # logo: _static/imgs/langbatch-logo.png
+  logo: _static/imgs/langbatch-logo.png
   favicon: _static/favicon.ico
   palette:
     scheme: slate
@@ -73,6 +73,7 @@ theme:
     - navigation.instant.progress
     - navigation.top
     - navigation.tracking
+    - navigation.footer
     
     - search.suggest
     - search.highlight
@@ -114,4 +115,20 @@ plugins:
             show_if_no_docstring: false
             show_root_toc_entry: true
             members_order: source
+            docstring_options:
+              ignore_init_summary: false
+            docstring_section_style: list
+            inherited_members: false
+            merge_init_into_class: false
+            preload_modules: [langbatch]
+            show_bases: true
+            show_root_heading: true
+            show_root_full_path: true
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            show_source: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            unwrap_annotated: true
   - glightbox

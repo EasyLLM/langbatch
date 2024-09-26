@@ -74,8 +74,7 @@ class InMemoryRequestQueue(RequestQueue):
         return len(self.queue)
     
 class RedisRequestQueue:
-    def __init__(self, redis_client: redis.Redis, queue_name: str = 'request_queue'):
-        """
+    """
         RedisRequestQueue is a request queue that uses a Redis list to store requests.
 
         Usage:
@@ -102,7 +101,8 @@ class RedisRequestQueue:
             },
         ])
         ```
-        """
+    """
+    def __init__(self, redis_client: redis.Redis, queue_name: str = 'request_queue'):
         self.redis_client = redis_client
         self.queue_name = queue_name
 

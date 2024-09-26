@@ -80,6 +80,12 @@ class FileBatchStorage(BatchStorage):
     """
 
     def __init__(self, directory: str = DATA_PATH):
+        """
+        Initialize the FileBatchStorage. Will create or use a directory named 'saved_batches' in the given directory to save the batches.
+
+        Args:
+            directory (str): The directory to save the batches. Defaults to the DATA_PATH.
+        """
         self.saved_batches_directory = Path(directory) / "saved_batches"
         self.saved_batches_directory.mkdir(exist_ok=True, parents=True)
 

@@ -27,7 +27,7 @@ class ChatCompletionBatch(Batch):
             batch_kwargs (Dict): Additional keyword arguments for the batch class. Ex. gcp_project, etc. for VertexChatCompletionBatch.
 
         Returns:
-            ChatCompletionBatch: An instance of the ChatCompletionBatch class.
+            An instance of the ChatCompletionBatch class.
 
         Raises:
             ValueError: If the input data is invalid.
@@ -60,10 +60,7 @@ class ChatCompletionBatch(Batch):
         Retrieve the results of the chat completion batch.
 
         Returns:
-            Tuple[List[Dict[str, Any]], List[Dict[str, Any]]] | Tuple[None, None]: 
-            A tuple containing successful and unsuccessful results.
-            - Successful results: A list of dictionaries with "choices" and "custom_id" keys.
-            - Unsuccessful results: A list of dictionaries with "error" and "custom_id" keys.
+            A tuple containing successful and unsuccessful results. Successful results: A list of dictionaries with "choices" and "custom_id" keys. Unsuccessful results: A list of dictionaries with "error" and "custom_id" keys.
 
         Usage:
         ```python

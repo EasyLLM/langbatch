@@ -29,9 +29,9 @@ for result in successful_results:
 ```
 
 !!! note
-    You can perform the same operations with other providers and models. 
+    You can perform the same actions with other providers and models. 
     For example, use the `VertexChatCompletionBatch` class to run batches with the Gemini models.
-    Check out the [Providers](../providers/index.md) section to learn more.
+    Check out the [Providers](/concepts/providers/) section to learn more.
 
 ```python
 from langbatch import VertexChatCompletionBatch

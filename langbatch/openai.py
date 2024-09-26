@@ -28,13 +28,13 @@ class OpenAIBatch(Batch):
         # With custom OpenAI client
         client = OpenAI(
             api_key="sk-proj-...",
-            base_url="https://api.llamas.exchange/v1"
+            base_url="https://api.provider.com/v1"
         )
         batch = OpenAIBatch("path/to/file.jsonl", client = client)
         ```
         """
         super().__init__(file)
-        self.client = client
+        self._client = client
 
     @classmethod
     def _get_init_args(cls, meta_data) -> Dict[str, Any]:
@@ -46,11 +46,11 @@ class OpenAIBatch(Batch):
     def _upload_batch_file(self):
         # Upload the batch file to OpenAI
         with open(self._file, "rb") as file:
-            batch_input_file  = self.client.files.create(file=file, purpose="batch")
+            batch_input_file  = self._client.files.create(file=file, purpose="batch")
             return batch_input_file.id
 
     def _create_batch(self, input_file_id):
-        batch = self.client.batches.create(
+        batch = self._client.batches.create(
             input_file_id=input_file_id,
             endpoint=self._url,
             completion_window= "24h"
@@ -81,7 +81,7 @@ class OpenAIBatch(Batch):
         if self.platform_batch_id is None:
             raise ValueError("Batch not started")
         
-        batch = self.client.batches.cancel(self.platform_batch_id)
+        batch = self._client.batches.cancel(self.platform_batch_id)
         if batch.status == "cancelling" or batch.status == "cancelled":
             return True
         else:
@@ -91,12 +91,12 @@ class OpenAIBatch(Batch):
         if self.platform_batch_id is None:
             raise ValueError("Batch not started")
         
-        batch = self.client.batches.retrieve(self.platform_batch_id)
+        batch = self._client.batches.retrieve(self.platform_batch_id)
         return batch.status
 
     def _download_results_file(self):
-        batch_object = self.client.batches.retrieve(self.platform_batch_id)
-        file_response = self.client.files.content(batch_object.output_file_id)
+        batch_object = self._client.batches.retrieve(self.platform_batch_id)
+        file_response = self._client.files.content(batch_object.output_file_id)
         
         file_path = self._create_results_file_path()
         with open(file_path, "wb") as file:
@@ -105,7 +105,7 @@ class OpenAIBatch(Batch):
         return file_path
     
     def _get_errors(self):
-        batch_object = self.client.batches.retrieve(self.platform_batch_id)
+        batch_object = self._client.batches.retrieve(self.platform_batch_id)
         return batch_object.errors
     
     def is_retryable_failure(self) -> bool:
@@ -124,7 +124,7 @@ class OpenAIBatch(Batch):
         if self.platform_batch_id is None:
             raise ValueError("Batch not started")
         
-        batch = self.client.batches.retrieve(self.platform_batch_id)
+        batch = self._client.batches.retrieve(self.platform_batch_id)
 
         self._create_batch(batch.input_file_id)
 
