@@ -1,0 +1,3 @@
+# Batch
+
+::: langbatch.Batch.Batch

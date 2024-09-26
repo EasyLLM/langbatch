@@ -1,18 +1,37 @@
 [tool.poetry]
 name = "langbatch"
 version = "0.1.0"
-description = ""
+description = "LangBatch is a python package with unified API for AI batch processing workloads [OpenAI, VertexAI]"
 authors = ["KarthikeyanVijayanEasyLLM <karthikeyan.vijayan@easyllm.tech>"]
 readme = "README.md"
+license = "Apache-2.0"
+homepage = "https://pypi.org/project/langbatch/"
+repository = "https://github.com/EasyLLM/langbatch"
+documentation = "https://github.com/EasyLLM/langbatch/blob/main/README.md"
 
 [tool.poetry.dependencies]
+# These packages are mandatory and form the core of this package’s distribution.
 python = "^3.11"
 openai = "^1.43.0"
 jsonlines = "^4.0.0"
-google-cloud-aiplatform = "^1.65.0"
-google-cloud-bigquery-storage = "^2.26.0"
-fastavro = "^1.9.7"
-redis = "^5.0.8"
+
+# These packages are optional and provide additional functionality.
+google-cloud-aiplatform = { version = "^1.65.0", optional = true }
+google-cloud-bigquery-storage = { version = "^2.26.0", optional = true }
+fastavro = { version = "^1.9.7", optional = true }
+redis = { version = "^5.0.8", optional = true }
+
+[tool.poetry.extras]
+VertexAI = ["google-cloud-aiplatform", "google-cloud-bigquery-storage", "fastavro"]
+redis = ["redis"]
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[tool.poetry.group.docs.dependencies]
+mkdocstrings = {extras = ["python"], version = "^0.26.1"}
+mkdocs-material = "^9.5.37"
+mkdocs-glightbox = "^0.4.0"
 
 [build-system]
 requires = ["poetry-core"]

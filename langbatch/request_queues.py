@@ -11,18 +11,29 @@ class RequestQueue(ABC):
     RequestQueue is an abstract class for request queues.
     Implementations should provide a way to add and retrieve requests.
 
+    Used in `BatchDispatcher` to get requests.
+
     Usage:
     ```python
     request_queue = InMemoryRequestQueue()
     request_queue.add_requests([
-        {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "How can I learn Python?"}]},
-        {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Who is the first president of the United States?"}]},
+        {   
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "user", "content": "How can I learn Python?"}
+            ]
+        },
+        {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "user", "content": "Who is the first president of the United States?"}
+            ]
+        },
     ])
     
     batch_dispatcher = BatchDispatcher(
         batch_handler=batch_handler,
-        queue=request_queue,
-        **kwargs
+        queue=request_queue
     )
 
     asyncio.create_task(batch_dispatcher.run())
@@ -30,10 +41,16 @@ class RequestQueue(ABC):
     """
     @abstractmethod
     def add_requests(self, requests: List[Any]):
+        """
+        Add requests to the queue
+        """
         pass
 
     @abstractmethod
     def get_requests(self, count: int) -> List[Any]:
+        """
+        Get requests from the queue
+        """
         pass
 
     @abstractmethod
@@ -71,8 +88,18 @@ class RedisRequestQueue:
 
         request_queue = RedisRequestQueue(redis_client, queue_name='turbo_requests')
         request_queue.add_requests([
-            {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "How can I learn Python?"}]},
-            {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Who is the first president of the United States?"}]},
+            {   
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "user", "content": "How can I learn Python?"}
+                ]
+            },
+            {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "user", "content": "Who is the first president of the United States?"}
+                ]
+            },
         ])
         ```
         """

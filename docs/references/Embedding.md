@@ -1,0 +1,3 @@
+# EmbeddingBatch
+
+::: langbatch.EmbeddingBatch.EmbeddingBatch

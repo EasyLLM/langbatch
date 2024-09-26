@@ -16,7 +16,7 @@ class Batch(ABC):
     """
     Batch class is the base class for all batch classes.
 
-    Implementations of this class will be platform specific. Ex. OpenAI, VertexAI, etc.
+    Implementations of this class will be platform specific (OpenAI, VertexAI, etc.)
     """
     _url: str = ""
     platform_batch_id: str | None = None

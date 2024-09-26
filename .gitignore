@@ -2,3 +2,6 @@
 *.jsonl
 *.json
 data
+tests/bigquery_tests.py
+tests/test_vertex.ipynb
+tests/check_vertex_batch.ipynb

@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 class BatchDispatcher:
     """
     Batch dispatcher creates batches from requests in the queue and dispatches them to the batch handler.
-
-    In time intervals, it checks the queue size and time threshold, and creates a batch and dispatches it to the batch handler.
+    It periodically checks the queue size and time threshold, and creates a batch and dispatches it to the batch handler.
 
     Usage:
     ```python
@@ -40,6 +39,15 @@ class BatchDispatcher:
         self.request_kwargs = request_kwargs
 
     async def run(self):
+        """
+        Start the batch dispatcher as a asynchronous background task.
+        Periodically checks the queue size and time threshold, and creates a batch and dispatches it to the batch handler.
+
+        Examples:
+            ```python
+            asyncio.create_task(batch_dispatcher.run())
+            ```
+        """
         while True:
             logger.info("Running batch dispatcher")
             await self._check_batch_conditions()

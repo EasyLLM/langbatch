@@ -111,36 +111,37 @@ class FileBatchQueueStorage(BatchQueueStorage):
 
 class BatchHandler:
     """
-    Batch handler that handles the batches added to the queue.
-    It handles:
+    Batch handler that handles the batches in a queue manner. It handles:
+    ```
     * starting batches
     * checking the status of batches
     * processing completed batches
     * retrying failed batches
     * cancelling non retryable failed batches
-
-    Usage:
-    ```python
-    # Create a batch handler process
-    batch_handler = BatchHandler(
-        batch_process_func=process_batch,
-        batch_type=OpenAIChatCompletionBatch
-    )
-    asyncio.create_task(batch_handler.run())
-
-    # Add batches to the queue
-    await batch_handler.add_batch("123")
-    await batch_handler.add_batch("456")
-
-    # With custom storage
-    custom_storage = MyCustomBatchQueueStorage()
-    batch_handler = BatchHandler(
-        batch_process_func=process_batch,
-        batch_type=OpenAIChatCompletionBatch,
-        storage=custom_storage
-    )
-    asyncio.create_task(batch_handler.run())
     ```
+
+    Examples:
+        ```python
+        # Create a batch handler process
+        batch_handler = BatchHandler(
+            batch_process_func=process_batch,
+            batch_type=OpenAIChatCompletionBatch
+        )
+        asyncio.create_task(batch_handler.run())
+
+        # Add batches to the queue
+        await batch_handler.add_batch("123")
+        await batch_handler.add_batch("456")
+
+        # With custom storage
+        custom_storage = MyCustomBatchQueueStorage()
+        batch_handler = BatchHandler(
+            batch_process_func=process_batch,
+            batch_type=OpenAIChatCompletionBatch,
+            storage=custom_storage
+        )
+        asyncio.create_task(batch_handler.run())
+        ```
     """
     def __init__(
             self, 
@@ -158,6 +159,17 @@ class BatchHandler:
         self.batch_kwargs = batch_kwargs
         
     async def add_batch(self, batch_id: str):
+        """
+        Add a batch to the queue.
+
+        Parameters:
+            batch_id: The ID of the batch to add.
+
+        Examples:
+            ```python
+            await batch_handler.add_batch("123")
+            ```
+        """
         self.queues["pending"].append(batch_id)
         self._save_queues()
         logger.info(f"Added batch {batch_id} to pending queue")
@@ -218,6 +230,15 @@ class BatchHandler:
         self.storage.save(self.queues)
 
     async def run(self):
+        """
+        Start the batch handler as a asynchronous background task.
+        Periodically checks the status of batches in the queue and processes them accordingly.
+
+        Usage:
+        ```python
+        asyncio.create_task(batch_handler.run())
+        ```
+        """
         while True:
             logger.info("Handling batches")
             retried_batches = 0
