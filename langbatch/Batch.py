@@ -34,6 +34,22 @@ class Batch(ABC):
         self._validate_requests() # Validate the requests in the batch file
 
     @classmethod
+    def _create_batch_file_from_requests(cls, requests) -> Path:
+        try:
+            batches_dir = Path(DATA_PATH) / "created_batches"
+            batches_dir.mkdir(exist_ok=True, parents=True)
+
+            id = str(uuid.uuid4())
+            file_path = batches_dir / f"{id}.jsonl"
+            with jsonlines.open(file_path, mode='w') as writer:
+                writer.write_all(requests)
+        except:
+            logging.error(f"Error creating batch file", exc_info=True)
+            return None
+
+        return file_path
+
+    @classmethod
     def _create_batch_file(cls, key: str, data: List[Any], request_kwargs: Dict = {}, batch_kwargs: Dict = {}) -> Path | None:
         """
         Create the batch file when given a list of items.
@@ -59,18 +75,62 @@ class Batch(ABC):
                 except:
                     logging.warning(f"Error processing item {item}", exc_info= True)
                     continue
-
-            batches_dir = Path(DATA_PATH) / "created_batches"
-            batches_dir.mkdir(exist_ok=True, parents=True)
-
-            id = str(uuid.uuid4())
-            file_path = batches_dir / f"{id}.jsonl"
-            with jsonlines.open(file_path, mode='w') as writer:
-                writer.write_all(requests)
         except:
-            logging.error(f"Error writing batch file", exc_info=True)
+            logging.error(f"Error creating requests from data to create batch file", exc_info=True)
             return None
         
+        file_path = cls._create_batch_file_from_requests(requests)
+        
+        if file_path is None:
+            raise ValueError("Failed to create batch. Check the input data.")
+        
+        return cls(file_path, **batch_kwargs)
+
+    @classmethod
+    def create_from_requests(cls, requests, batch_kwargs: Dict = {}):
+        """
+        Creates a batch when given a list of requests. 
+        These requests should be in correct Batch API request format as per the Batch type.
+        Ex. for OpenAIChatCompletionBatch, requests should be a Chat Completion request with custom_id.
+
+        Args:
+            requests: A list of requests.
+            batch_kwargs (Dict, optional): Additional keyword arguments for the batch class. Ex. gcp_project, etc. for VertexChatCompletionBatch.
+
+        Returns:
+            An instance of the Batch class.
+
+        Raises:
+            ValueError: If the input data is invalid.
+
+        Usage:
+        ```python
+        batch = OpenAIChatCompletionBatch.create_from_requests([
+            {   "custom_id": "request-1",
+                "method": "POST",
+                "url": "/v1/chat/completions",
+                "body": {
+                    "model": "gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "Biryani Receipe, pls."}],
+                    "max_tokens": 1000
+                }
+            },
+            {
+                "custom_id": "request-2",
+                "method": "POST",
+                "url": "/v1/chat/completions",
+                "body": {
+                    "model": "gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "Write a short story about AI"}],
+                    "max_tokens": 1000
+                }
+            }
+        ]
+        ``` 
+        """
+
+        file_path = cls._create_batch_file_from_requests(requests)
+
         if file_path is None:
             raise ValueError("Failed to create batch. Check the input data.")
         
@@ -306,12 +366,12 @@ class Batch(ABC):
     def retry(self):
         pass
 
-    def get_unsuccessful_requests(self):
+    def get_unsuccessful_requests(self) -> List[Dict[str, Any]]:
         """
         Retrieve the unsuccessful requests from the batch.
 
         Returns:
-            List[Dict[str, Any]]: A list of requests that failed.
+            A list of requests that failed.
 
         Usage:
         ```python
@@ -333,7 +393,7 @@ class Batch(ABC):
         
         return self.get_requests_by_custom_ids(custom_ids)
 
-    def get_requests_by_custom_ids(self, custom_ids: List[str]):
+    def get_requests_by_custom_ids(self, custom_ids: List[str]) -> List[Dict[str, Any]]:
         """
         Retrieve the requests from the batch file by custom ids.
 
@@ -341,7 +401,7 @@ class Batch(ABC):
             custom_ids (List[str]): A list of custom ids.
 
         Returns:
-            List[Dict[str, Any]]: A list of requests.
+            A list of requests.
 
         Usage:
         ```python

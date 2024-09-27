@@ -30,7 +30,8 @@ batch_dispatcher = BatchDispatcher(
     queue=request_queue,
     queue_threshold=50000, # 50000 requests
     time_threshold=3600 * 2, # 2 hours
-    time_interval=600, # 10 minutes
+    time_interval=600, # 10 minutes,
+    requests_type="partial",
     request_kwargs=request_kwargs
 )
 ```
@@ -43,7 +44,9 @@ Here, we are initializing a batch dispatcher with a InMemoryRequestQueue.
 
 `time_interval` is the time interval for which the queue will be checked for the queue threshold and time threshold.
 
-`request_kwargs` is the kwargs that will be passed to the create method in Batch class to create a batch. Ex. temperature, max_tokens, etc.
+`requests_type` is the type of requests that will be added to the queue. It can be "partial" or "full". If it is 'partial', [Batch.create](/references/ChatCompletion/#langbatch.ChatCompletionBatch.ChatCompletionBatch.create) method is used to create the batch, and if it is 'full', [Batch.create_from_requests](/references/Batch/#langbatch.Batch.Batch.create_from_requests) method is used.
+
+`request_kwargs` is the kwargs that will be passed to the [Batch.create](/references/ChatCompletion/#langbatch.ChatCompletionBatch.ChatCompletionBatch.create) method in Batch class to create a batch. Ex. temperature, max_tokens, etc. Used when `requests_type` is 'partial'.
 
 ## Run the Batch Dispatcher
 

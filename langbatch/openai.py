@@ -96,11 +96,17 @@ class OpenAIBatch(Batch):
 
     def _download_results_file(self):
         batch_object = self._client.batches.retrieve(self.platform_batch_id)
-        file_response = self._client.files.content(batch_object.output_file_id)
+
+        output_file_id = batch_object.output_file_id
+
+        if output_file_id is not None:
+            file_response = self._client.files.content(output_file_id).content
+        else:
+            file_response = b''  # Handle case where there's no output file by creating an empty file
         
         file_path = self._create_results_file_path()
         with open(file_path, "wb") as file:
-            file.write(file_response.content)
+            file.write(file_response)
 
         return file_path
     
