@@ -17,18 +17,14 @@ class RequestQueue(ABC):
     ```python
     request_queue = InMemoryRequestQueue()
     request_queue.add_requests([
-        {   
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "user", "content": "How can I learn Python?"}
-            ]
-        },
-        {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "user", "content": "Who is the first president of the United States?"}
-            ]
-        },
+        [
+            {"role": "user", "content": "How can I learn Python?"}
+        ],
+        [
+            {"role": "user", "content": "Who is the first president of the United States?"},
+            {"role": "assistant", "content": "George Washington"},
+            {"role": "user", "content": "Second?"}
+        ]
     ])
     
     batch_dispatcher = BatchDispatcher(
@@ -75,32 +71,28 @@ class InMemoryRequestQueue(RequestQueue):
     
 class RedisRequestQueue:
     """
-        RedisRequestQueue is a request queue that uses a Redis list to store requests.
+    RedisRequestQueue is a request queue that uses a Redis list to store requests.
 
-        Usage:
-        ```python
-        import os
-        import redis
+    Usage:
+    ```python
+    import os
+    import redis
 
-        REDIS_URL = os.environ.get('REDIS_URL')
-        redis_client = redis.from_url(REDIS_URL)
+    REDIS_URL = os.environ.get('REDIS_URL')
+    redis_client = redis.from_url(REDIS_URL)
 
-        request_queue = RedisRequestQueue(redis_client, queue_name='turbo_requests')
-        request_queue.add_requests([
-            {   
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "user", "content": "How can I learn Python?"}
-                ]
-            },
-            {
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "user", "content": "Who is the first president of the United States?"}
-                ]
-            },
-        ])
-        ```
+    request_queue = RedisRequestQueue(redis_client, queue_name='turbo_requests')
+    request_queue.add_requests([
+        [
+            {"role": "user", "content": "How can I learn Python?"}
+        ],
+        [
+            {"role": "user", "content": "Who is the first president of the United States?"},
+            {"role": "assistant", "content": "George Washington"},
+            {"role": "user", "content": "Second?"}
+        ]
+    ])
+    ```
     """
     def __init__(self, redis_client: redis.Redis, queue_name: str = 'request_queue'):
         self.redis_client = redis_client

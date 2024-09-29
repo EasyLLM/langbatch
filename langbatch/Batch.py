@@ -275,6 +275,9 @@ class Batch(ABC):
 
         if len(invalid_requests) > 0:
             raise ValueError(f"Invalid requests: {invalid_requests}")
+        
+        if len(self._get_requests()) == 0:
+            raise ValueError("No requests found in the batch file")
     
     def _create_results_file_path(self):
         results_dir = Path(DATA_PATH) / "results"
@@ -334,6 +337,20 @@ class Batch(ABC):
             successful_results = []
             unsuccessful_results = []
             for result in results:
+                if result['response'] is None:
+                    if result['error'] is not None:
+                        error = {
+                            "custom_id": result['custom_id'],
+                            "error": result['error']
+                        }
+                    else:
+                        error = {
+                            "custom_id": result['custom_id'],
+                            "error": "No response from the API"
+                        }
+                    unsuccessful_results.append(error)
+                    continue
+
                 if result['response']['status_code'] == 200:
                     choices = {
                         "custom_id": result['custom_id'],

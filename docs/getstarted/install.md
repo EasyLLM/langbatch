@@ -6,6 +6,8 @@ To get started, install LangBatch using `pip` with the following command:
 pip install langbatch
 ```
 
+This will install the core LangBatch package. 
+
 ## Optional Provider Dependencies
 Core LangBatch package only supports OpenAI and OpenAI compatible providers. For Other providers, you need to install additional dependencies.
 
@@ -25,6 +27,13 @@ pip install langbatch[redis]
 ```
 
 This will install the dependencies for using RedisRequestQueue with LangBatch.
+
+## Install all dependencies
+```bash
+pip install langbatch[all]
+```
+
+This will install the dependencies for using all the utilities and integrations with LangBatch.
 
 ## Install from main branch
 If you'd like to experiment with the latest features, install the most recent version from the main branch:

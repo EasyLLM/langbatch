@@ -24,9 +24,12 @@ redis = { version = "^5.0.8", optional = true }
 [tool.poetry.extras]
 VertexAI = ["google-cloud-aiplatform", "google-cloud-bigquery-storage", "fastavro"]
 redis = ["redis"]
+all = ["google-cloud-aiplatform", "google-cloud-bigquery-storage", "fastavro", "redis"]
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
+pytest = "^8.3.3"
+pytest-sugar = "^1.0.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocstrings = {extras = ["python"], version = "^0.26.1"}
