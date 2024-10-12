@@ -69,7 +69,7 @@ class InMemoryRequestQueue(RequestQueue):
     def __len__(self):
         return len(self.queue)
     
-class RedisRequestQueue:
+class RedisRequestQueue(RequestQueue):
     """
     RedisRequestQueue is a request queue that uses a Redis list to store requests.
 

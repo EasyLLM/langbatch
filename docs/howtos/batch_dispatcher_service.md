@@ -30,11 +30,13 @@ def process_batch(batch: OpenAIChatCompletionBatch):
         # TODO: process the successful result
 
 # Initialize Batch Handler and Batch Dispatcher
-storage = FileBatchQueueStorage("batch_queue.json")
+batch_queue_storage = FileBatchQueueStorage("batch_queue.json")
+batch_storage = FileBatchStorage()
 handler = BatchHandler(
     batch_process_func = process_batch, 
     batch_type = OpenAIChatCompletionBatch, 
-    storage = storage, 
+    batch_queue_storage = batch_queue_storage,
+    batch_storage = batch_storage,
     wait_time = 3600 # check batches every 1 hour
 )
 

@@ -7,6 +7,7 @@ from enum import Enum
 import asyncio
 
 from langbatch.Batch import Batch
+from langbatch.batch_storages import BatchStorage
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +33,15 @@ class BatchQueueStorage(ABC):
     import asyncio
 
     # Using default FileBatchQueueStorage
-    storage = FileBatchQueueStorage("batch_queue.json")
+    file_batch_queue_storage = FileBatchQueueStorage("batch_queue.json")
     batch_handler = BatchHandler(
         batch_process_func=process_batch,
         batch_type=OpenAIChatCompletionBatch,
-        storage=storage
+        batch_queue_storage=file_batch_queue_storage
     )
     asyncio.create_task(batch_handler.run())
 
-    # With custom storage
+    # With custom batch queue storage
     class MyCustomBatchQueueStorage(BatchQueueStorage):
         def save(self, queue: Dict[str, List[str]]):
             # Custom save logic
@@ -48,11 +49,11 @@ class BatchQueueStorage(ABC):
         def load(self) -> Dict[str, List[str]]:
             # Custom load logic
 
-    custom_storage = MyCustomBatchQueueStorage()
+    custom_batch_queue_storage = MyCustomBatchQueueStorage()
     batch_handler = BatchHandler(
         batch_process_func=process_batch,
         batch_type=OpenAIChatCompletionBatch,
-        storage=custom_storage
+        batch_queue_storage=custom_batch_queue_storage
     )
     asyncio.create_task(batch_handler.run())
     ```
@@ -82,7 +83,7 @@ class FileBatchQueueStorage(BatchQueueStorage):
     batch_handler = BatchHandler(
         batch_process_func=process_batch,
         batch_type=OpenAIChatCompletionBatch,
-        storage=storage
+        batch_queue_storage=storage
     )
 
     asyncio.create_task(batch_handler.run())
@@ -134,11 +135,13 @@ class BatchHandler:
         await batch_handler.add_batch("456")
 
         # With custom storage
-        custom_storage = MyCustomBatchQueueStorage()
+        custom_batch_queue_storage = MyCustomBatchQueueStorage()
+        custom_batch_storage = MyCustomBatchStorage()
         batch_handler = BatchHandler(
             batch_process_func=process_batch,
             batch_type=OpenAIChatCompletionBatch,
-            storage=custom_storage
+            batch_queue_storage=custom_batch_queue_storage,
+            batch_storage=custom_batch_storage
         )
         asyncio.create_task(batch_handler.run())
         ```
@@ -147,17 +150,18 @@ class BatchHandler:
             self, 
             batch_process_func: Callable, 
             batch_type: Type[Batch], 
-            storage: BatchQueueStorage = None,
+            batch_queue_storage: BatchQueueStorage = None,
+            batch_storage: BatchStorage = None,
             wait_time: int = 3600,
             batch_kwargs: Dict = {}
         ):
         self.batch_process_func = batch_process_func
         self.batch_type = batch_type
-        self.storage = storage or FileBatchQueueStorage("batch_queue.json")
-        self.queues = self.storage.load()
+        self.batch_queue_storage = batch_queue_storage or FileBatchQueueStorage("batch_queue.json")
+        self.queues = self.batch_queue_storage.load()
         self.wait_time = wait_time
         self.batch_kwargs = batch_kwargs
-        
+        self.batch_storage = batch_storage
     async def add_batch(self, batch_id: str):
         """
         Add a batch to the queue.
@@ -227,7 +231,7 @@ class BatchHandler:
         logger.warning(f"Batch {batch_id} not found in any queue for cancellation")
 
     def _save_queues(self):
-        self.storage.save(self.queues)
+        self.batch_queue_storage.save(self.queues)
 
     async def run(self):
         """
@@ -243,7 +247,10 @@ class BatchHandler:
             logger.info("Handling batches")
             retried_batches = 0
             for batch_id in self.queues["processing"]:
-                batch = self.batch_type.load(batch_id)
+                if self.batch_storage:
+                    batch = self.batch_type.load(batch_id, storage = self.batch_storage)
+                else:
+                    batch = self.batch_type.load(batch_id)
                 status = BatchStatus(await asyncio.to_thread(batch.get_status))
                 
                 if status == BatchStatus.COMPLETED:
@@ -259,7 +266,10 @@ class BatchHandler:
             if retried_batches < 4:
                 started_batches = 0
                 for batch_id in self.queues["pending"]:
-                    batch = self.batch_type.load(batch_id)
+                    if self.batch_storage:
+                        batch = self.batch_type.load(batch_id, storage=self.batch_storage)
+                    else:
+                        batch = self.batch_type.load(batch_id)
                     await self.start_batch(batch)
                     started_batches += 1
 
@@ -284,4 +294,3 @@ class BatchHandler:
         except Exception as e:
             logger.error(f"Error handling {status.value} batch {batch.id}: {e}")
             return False
-
