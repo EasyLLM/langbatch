@@ -1,7 +1,5 @@
+*.env
 *.pyc
 *.json
-langbatch/data
+data
 others
-tests/bigquery_tests.py
-tests/test_vertex.ipynb
-tests/check_vertex_batch.ipynb

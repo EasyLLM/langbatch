@@ -9,7 +9,7 @@ from google.cloud import bigquery
 
 from langbatch.Batch import Batch
 from langbatch.ChatCompletionBatch import ChatCompletionBatch
-from langbatch.bigquery_utils import write_data_to_bigquery, read_data_from_bigquery, drop_table
+from langbatch.bigquery_utils import write_data_to_bigquery, read_data_from_bigquery, create_table
 from langbatch.schemas import VertexChatCompletionRequest
 
 vertex_state_map = {
@@ -81,25 +81,7 @@ class VertexBatch(Batch):
         return meta_data
 
     def _create_table(self, dataset_id: str):
-        client = bigquery.Client()
-        schema = [
-            bigquery.SchemaField("request", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("custom_id", "STRING", mode="REQUIRED"),
-        ]
-
-        table_id = f"{self.gcp_project}.{dataset_id}.{self.id}"
-        table = bigquery.Table(table_id, schema=schema)
-        
-        try:
-            table = client.create_table(table)
-        except Exception as e:
-            if "Already Exists:" in str(e):
-                drop_table(self.gcp_project, dataset_id, self.id)
-                table = client.create_table(table)
-            else:
-                raise e
-            
-        return table.table_id
+        return create_table(self.gcp_project, dataset_id, self.id)
 
     @abstractmethod
     def _convert_request(self, req: dict) -> str:
@@ -180,6 +162,7 @@ class VertexBatch(Batch):
             return None
     
     def is_retryable_failure(self) -> bool:
+        # TODO: implement retry logic for Vertex API
         error = self._get_errors()
         if error:
             logging.error(f"Error in Vertex Batch: {error}")
@@ -352,15 +335,24 @@ class VertexChatCompletionBatch(VertexBatch, ChatCompletionBatch):
                         "tool_calls": tool_calls
                     }
                 else:
-                    content = candidate["content"]["parts"][0]["text"]
-                    message = {
-                        "role": "assistant",
-                        "content": content
-                    }
+                    try:
+                        content = candidate["content"]["parts"][0]["text"]
+                        message = {
+                            "role": "assistant",
+                            "content": content
+                        }
+                    except KeyError:
+                        message = {"role": "assistant", "content": ""}
 
                 choice["message"] = message
                 
                 choices.append(choice)
+
+            usage = {
+                "prompt_tokens": tokens.get("promptTokenCount", 0),
+                "completion_tokens": tokens.get("candidatesTokenCount", 0),
+                "total_tokens": tokens.get("totalTokenCount", 0)
+            }
 
             # Create the body
             body = {
@@ -370,11 +362,7 @@ class VertexChatCompletionBatch(VertexBatch, ChatCompletionBatch):
                 "model": self.model_name,
                 "system_fingerprint": None,
                 "choices": choices,
-                "usage": {
-                    "prompt_tokens": tokens["promptTokenCount"],
-                    "completion_tokens": tokens["candidatesTokenCount"],
-                    "total_tokens": tokens["totalTokenCount"]
-                }
+                "usage": usage
             }
 
             res = {

@@ -94,9 +94,7 @@ class BatchDispatcher:
 
     async def _dispatch_batch(self, batch: Batch):
         logger.info(f"Dispatching batch {batch.id}")
-        if self.batch_handler.batch_storage:
-            await asyncio.to_thread(batch.save, self.batch_handler.batch_storage)
-        else:
-            await asyncio.to_thread(batch.save)
+        await asyncio.to_thread(batch.save, self.batch_handler.batch_storage)
+        
         await self.batch_handler.add_batch(batch.id)
         logger.info(f"Batch {batch.id} dispatched successfully")

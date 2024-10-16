@@ -30,9 +30,9 @@ vertexai.init(project=GCP_PROJECT, location=GCP_LOCATION)
 VertexAI Batch can be created with the model name, project id, location, bigquery input dataset and bigquery output dataset values.
 
 ```python
-from langbatch.vertexai import VertexAIChatCompletionBatch
+from langbatch.vertex import VertexChatCompletionBatch
 
-batch = VertexAIChatCompletionBatch(
+batch = VertexChatCompletionBatch(
     file="data.jsonl",
     model_name="gemini-1.5-flash-001",
     project=GCP_PROJECT,

@@ -13,7 +13,9 @@ from typing import List
 from pydantic import BaseModel
 
 from fastapi import FastAPI, HTTPException
-from langbatch.batch_processing import BatchHandler, FileBatchQueueStorage
+from langbatch.batch_processing import BatchHandler
+from langbatch.batch_queues import FileBatchQueue
+from langbatch.batch_storages import FileBatchStorage
 from langbatch.openai import OpenAIChatCompletionBatch
 from langbatch.batch_dispatching import BatchDispatcher
 from langbatch.request_queues import InMemoryRequestQueue
@@ -30,12 +32,12 @@ def process_batch(batch: OpenAIChatCompletionBatch):
         # TODO: process the successful result
 
 # Initialize Batch Handler and Batch Dispatcher
-batch_queue_storage = FileBatchQueueStorage("batch_queue.json")
+batch_queue = FileBatchQueue("batch_queue.json")
 batch_storage = FileBatchStorage()
 handler = BatchHandler(
     batch_process_func = process_batch, 
     batch_type = OpenAIChatCompletionBatch, 
-    batch_queue_storage = batch_queue_storage,
+    batch_queue = batch_queue,
     batch_storage = batch_storage,
     wait_time = 3600 # check batches every 1 hour
 )

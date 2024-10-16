@@ -65,4 +65,3 @@ def test_request_queue(request_queue: RequestQueue):
     # Test getting requests when queue is empty after some operations
     requests = request_queue.get_requests(3)
     assert len(requests) == 0
-

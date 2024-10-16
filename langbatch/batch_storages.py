@@ -102,7 +102,7 @@ class FileBatchStorage(BatchStorage):
         data_file = self.saved_batches_directory / f"{id}.jsonl"
         json_file = self.saved_batches_directory / f"{id}.json"
 
-        if not data_file.exists() or not json_file.exists():
+        if not data_file.is_file() or not json_file.is_file():
             raise ValueError(f"Batch with id {id} not found")
         
         return data_file, json_file

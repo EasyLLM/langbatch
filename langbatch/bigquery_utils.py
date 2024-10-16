@@ -4,6 +4,7 @@ from google.cloud.bigquery_storage_v1 import types, writer
 from google.protobuf import descriptor_pb2
 from google.cloud import bigquery
 from langbatch.record_pb2 import BatchRecord
+import time
 
 def create_row_data(custom_id: str, request: str):
     row = BatchRecord()
@@ -14,19 +15,17 @@ def create_row_data(custom_id: str, request: str):
 def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data: list):
     try:
         write_client = bigquery_storage_v1.BigQueryWriteClient()
-
         parent = write_client.table_path(project_id, dataset_id, table_id)
-        
-        # Create a write stream
-        try:
-            write_stream = types.WriteStream()
-            write_stream.type_ = types.WriteStream.Type.COMMITTED
-            write_stream = write_client.create_write_stream(parent=parent, write_stream=write_stream)
-            stream_name = write_stream.name
-        except:
-            logging.error("Error creating write stream", exc_info=True)
-            raise ValueError("Error writing data to BigQuery. Check the GCP project and BigQuery dataset values")
+    
+        write_stream = types.WriteStream()
+        write_stream.type_ = types.WriteStream.Type.COMMITTED
+        write_stream = write_client.create_write_stream(parent=parent, write_stream=write_stream)
+        stream_name = write_stream.name
+    except:
+        logging.error("Error creating write stream", exc_info=True)
+        raise ValueError("Error writing data to BigQuery. Check the GCP project and BigQuery dataset values")
 
+    try:
         # Create a template with fields needed for the first request.
         request_template = types.AppendRowsRequest()
 
@@ -71,6 +70,29 @@ def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data
     except:
         logging.error("Error writing data to BigQuery", exc_info=True)
         return False
+
+def create_table(project_id: str, dataset_id: str, id: str):
+    client = bigquery.Client()
+    schema = [
+        bigquery.SchemaField("request", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("custom_id", "STRING", mode="REQUIRED"),
+    ]
+
+    table_id = f"{project_id}.{dataset_id}.{id}"
+    table = bigquery.Table(table_id, schema=schema)
+    
+    try:
+        table = client.create_table(table)
+    except Exception as e:
+        if "Already Exists:" in str(e):
+            drop_table(project_id, dataset_id, id)
+            table = client.create_table(table)
+        else:
+            raise e
+        
+    time.sleep(10)
+        
+    return table.table_id
 
 def drop_table(project_id: str, dataset_id: str, table_id: str):
     client = bigquery.Client()

@@ -1,6 +1,4 @@
 from pathlib import Path
-import tempfile
-import shutil
 import json
 
 import pytest
@@ -8,30 +6,12 @@ import jsonlines
 
 from langbatch.openai import OpenAIChatCompletionBatch
 from langbatch.batch_storages import FileBatchStorage
-
-@pytest.fixture
-def temp_dir():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        yield temp_dir
-
-def copy_file(file_name, temp_dir):
-    source_path = Path('tests/data') / file_name
-    dest_path = Path(temp_dir) / file_name
-    shutil.copy(source_path, dest_path)
-    return dest_path
-
-@pytest.fixture
-def test_data_file(temp_dir, request):
-    file_name = request.param if hasattr(request, 'param') else 'chat_completion_batch.jsonl'
-    return copy_file(file_name, temp_dir)
-
-@pytest.fixture
-def batch(temp_dir) -> OpenAIChatCompletionBatch:
-    file_name = 'chat_completion_batch.jsonl'
-    dest_path = copy_file(file_name, temp_dir)
-    return OpenAIChatCompletionBatch(dest_path)
+from tests.unit.fixtures import *
 
 def test_init(batch: OpenAIChatCompletionBatch):
+    # check if the id is not None
+    assert batch.id is not None
+
     # check if the platform_batch_id is None
     assert batch.platform_batch_id is None
 
@@ -70,8 +50,12 @@ def test_create(test_data_file):
         "max_tokens": 500
     }
     batch = OpenAIChatCompletionBatch.create(requests, request_kwargs)
-    batch_requests = batch._get_requests()
+    assert batch.id is not None
+    assert batch.platform_batch_id is None
+    assert batch._file is not None
+    assert Path(batch._file).is_file()
 
+    batch_requests = batch._get_requests()
     assert len(batch_requests) > 0
     assert len(batch_requests) == len(requests)
 

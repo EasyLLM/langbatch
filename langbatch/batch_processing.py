@@ -1,13 +1,11 @@
 import logging
-import json
-import os
-from abc import ABC, abstractmethod
-from typing import List, Dict, Callable, Type
+from typing import Dict, Callable, Type
 from enum import Enum
 import asyncio
 
 from langbatch.Batch import Batch
-from langbatch.batch_storages import BatchStorage
+from langbatch.batch_storages import BatchStorage, FileBatchStorage
+from langbatch.batch_queues import BatchQueue, FileBatchQueue
 
 logger = logging.getLogger(__name__)
 
@@ -20,95 +18,6 @@ class BatchStatus(Enum):
     EXPIRED = "expired"
     CANCELLING = "cancelling"
     CANCELLED = "cancelled"
-
-class BatchQueueStorage(ABC):
-    """
-    Abstract class for batch queue storage.
-    Implementations should provide a way to save and load batch queues.
-
-    Used in BatchHandler to save and load the batch queues.
-
-    Usage:
-    ```python
-    import asyncio
-
-    # Using default FileBatchQueueStorage
-    file_batch_queue_storage = FileBatchQueueStorage("batch_queue.json")
-    batch_handler = BatchHandler(
-        batch_process_func=process_batch,
-        batch_type=OpenAIChatCompletionBatch,
-        batch_queue_storage=file_batch_queue_storage
-    )
-    asyncio.create_task(batch_handler.run())
-
-    # With custom batch queue storage
-    class MyCustomBatchQueueStorage(BatchQueueStorage):
-        def save(self, queue: Dict[str, List[str]]):
-            # Custom save logic
-
-        def load(self) -> Dict[str, List[str]]:
-            # Custom load logic
-
-    custom_batch_queue_storage = MyCustomBatchQueueStorage()
-    batch_handler = BatchHandler(
-        batch_process_func=process_batch,
-        batch_type=OpenAIChatCompletionBatch,
-        batch_queue_storage=custom_batch_queue_storage
-    )
-    asyncio.create_task(batch_handler.run())
-    ```
-    """
-    @abstractmethod
-    def save(self, queue: Dict[str, List[str]]):
-        """
-        Save the batch queue.
-        """
-        pass
-
-    @abstractmethod
-    def load(self) -> Dict[str, List[str]]:
-        """
-        Load the batch queue.
-        """
-        pass
-
-class FileBatchQueueStorage(BatchQueueStorage):
-    """
-    Batch queue storage that saves the queue to a file.
-
-    Usage:
-    ```python
-    storage = FileBatchQueueStorage("batch_queue.json")
-
-    batch_handler = BatchHandler(
-        batch_process_func=process_batch,
-        batch_type=OpenAIChatCompletionBatch,
-        batch_queue_storage=storage
-    )
-
-    asyncio.create_task(batch_handler.run())
-    ```
-    """
-    def __init__(self, file_path: str):
-        self.file_path = file_path
-
-    def save(self, queue: Dict[str, List[str]]):
-        try:
-            with open(self.file_path, 'w') as f:
-                json.dump(queue, f)
-        except IOError as e:
-            logger.error(f"Error saving queue to file: {e}")
-            raise
-
-    def load(self) -> Dict[str, List[str]]:
-        try:
-            if os.path.exists(self.file_path):
-                with open(self.file_path, 'r') as f:
-                    return json.load(f)
-            return {"pending": [], "processing": []}
-        except IOError as e:
-            logger.error(f"Error loading queue from file: {e}")
-            raise
 
 class BatchHandler:
     """
@@ -134,13 +43,13 @@ class BatchHandler:
         await batch_handler.add_batch("123")
         await batch_handler.add_batch("456")
 
-        # With custom storage
-        custom_batch_queue_storage = MyCustomBatchQueueStorage()
+        # With custom batch queue and batch storage
+        custom_batch_queue = MyCustomBatchQueue()
         custom_batch_storage = MyCustomBatchStorage()
         batch_handler = BatchHandler(
             batch_process_func=process_batch,
             batch_type=OpenAIChatCompletionBatch,
-            batch_queue_storage=custom_batch_queue_storage,
+            batch_queue=custom_batch_queue,
             batch_storage=custom_batch_storage
         )
         asyncio.create_task(batch_handler.run())
@@ -150,18 +59,19 @@ class BatchHandler:
             self, 
             batch_process_func: Callable, 
             batch_type: Type[Batch], 
-            batch_queue_storage: BatchQueueStorage = None,
+            batch_queue: BatchQueue = None,
             batch_storage: BatchStorage = None,
             wait_time: int = 3600,
             batch_kwargs: Dict = {}
         ):
         self.batch_process_func = batch_process_func
         self.batch_type = batch_type
-        self.batch_queue_storage = batch_queue_storage or FileBatchQueueStorage("batch_queue.json")
-        self.queues = self.batch_queue_storage.load()
+        self.batch_queue = batch_queue or FileBatchQueue("batch_queue.json")
+        self.queues = self.batch_queue.load()
         self.wait_time = wait_time
         self.batch_kwargs = batch_kwargs
-        self.batch_storage = batch_storage
+        self.batch_storage = batch_storage or FileBatchStorage()
+
     async def add_batch(self, batch_id: str):
         """
         Add a batch to the queue.
@@ -217,7 +127,7 @@ class BatchHandler:
                 await asyncio.to_thread(batch.retry)
             except:
                 logger.error(f"Error retrying batch {batch.id}", exc_info=True)
-                self.cancel_batch(batch.id)
+                await self.cancel_batch(batch.id)
         else:
             logger.warning(f"Batch {batch.id} not found in processing queue for retry")
 
@@ -231,7 +141,7 @@ class BatchHandler:
         logger.warning(f"Batch {batch_id} not found in any queue for cancellation")
 
     def _save_queues(self):
-        self.batch_queue_storage.save(self.queues)
+        self.batch_queue.save(self.queues)
 
     async def run(self):
         """
@@ -262,6 +172,9 @@ class BatchHandler:
                             retried_batches += 1
                 elif status in [BatchStatus.CANCELLING, BatchStatus.CANCELLED]:
                     await self.cancel_batch(batch_id)
+                elif status not in [BatchStatus.VALIDATING, BatchStatus.IN_PROGRESS, BatchStatus.FINALIZING]:
+                    logger.error(f"Unknown status {status.value} for batch {batch_id}")
+                    await self.cancel_batch(batch_id)
 
             if retried_batches < 4:
                 started_batches = 0
@@ -281,7 +194,8 @@ class BatchHandler:
     async def _handle_failed_or_expired_batch(self, batch: 'Batch', status: BatchStatus):
         try:
             if status == BatchStatus.FAILED:
-                if batch.is_retryable_failure():
+                retryable = await batch.is_retryable_failure()
+                if retryable:
                     await asyncio.to_thread(self.retry_batch, batch)
                     return True
                 else:

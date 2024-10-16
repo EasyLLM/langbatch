@@ -56,15 +56,15 @@ batch_handler = BatchHandler(
 
 ## With Custom Storage
 
-By default, BatchHandler uses `FileBatchQueueStorage` to store the batch queue. And `FileBatchStorage` to store the batches. You can implement and use custom implemetations of `BatchQueueStorage` and `BatchStorage` for the batch handler by passing them to the `BatchHandler` constructor.
+By default, BatchHandler uses `FileBatchQueue` to handle the batch queue. And `FileBatchStorage` to store the batches. You can implement and use custom implemetations of `BatchQueue` and `BatchStorage` for the batch handler by passing them to the `BatchHandler` constructor.
 
 ```python
-custom_batch_queue_storage = MyCustomBatchQueueStorage()
+custom_batch_queue = MyCustomBatchQueue()
 custom_batch_storage = MyCustomBatchStorage()
 batch_handler = BatchHandler(
     batch_process_func=process_batch,
     batch_type=OpenAIChatCompletionBatch,
-    batch_queue_storage=custom_batch_queue_storage,
+    batch_queue=custom_batch_queue,
     batch_storage=custom_batch_storage
 )
 ```
