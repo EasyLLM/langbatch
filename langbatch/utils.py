@@ -1,6 +1,8 @@
 import os
 import logging
 from pathlib import Path
+import base64
+import httpx
 
 def get_data_path():
     # Default data path, can be overridden by environment variable
@@ -32,3 +34,10 @@ def get_data_path():
         return data_path
     except Exception as e:
         raise PermissionError(f"Unable to write to default data path: {data_path}. Error: {e}")
+
+def get_web_image(image_url: str):
+    response = httpx.get(image_url)
+    response.raise_for_status()
+    image_media_type = response.headers.get("content-type")
+    image_data = base64.b64encode(response.content).decode("utf-8")
+    return image_media_type, image_data

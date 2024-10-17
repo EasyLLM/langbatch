@@ -49,3 +49,15 @@ class VertexChatCompletionRequest(BaseModel):
     temperature: Optional[float] = None
     tools: Optional[Iterable[ChatCompletionToolParam]] = None
     top_p: Optional[float] = None
+
+class AnthropicChatCompletionRequest(BaseModel):
+    messages: Iterable[ChatCompletionMessageParam]
+    model: Union[str, ChatModel]
+    max_tokens: Optional[int] = None
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    stop: Optional[Union[str, List[str]]] = None
+    tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None
+    tools: Optional[Iterable[ChatCompletionToolParam]] = None
+    parallel_tool_calls: Optional[bool] = None
+    user: Optional[str] = None
