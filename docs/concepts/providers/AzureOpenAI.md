@@ -31,4 +31,4 @@ batch.start()
 
 !!! note
     Azure OpenAI does not support Text Embedding models and Finetuned LLMs yet.
-    Refer to [Azure OpenAI Batch APIDocumentation](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/batch?pivots=programming-language-python) for more information.
+    Refer to [Azure OpenAI Batch APIDocumentation](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/batch?pivots=programming-language-python){:target="_blank"} for more information.

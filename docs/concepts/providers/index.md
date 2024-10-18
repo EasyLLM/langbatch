@@ -6,6 +6,8 @@ LangBatch currently supports the following providers:
 
 - [OpenAI](./OpenAI.md)
 
+- [Anthropic](./Anthropic.md)
+
 - [Azure OpenAI](./AzureOpenAI.md)
 
 - [VertexAI](./VertexAI.md)
@@ -14,4 +16,4 @@ LangBatch currently supports the following providers:
 </div>
 
 !!! note
-    LangBatch is designed to support multiple providers. We will add support for more providers in the future. Please raise an [Issue](https://github.com/EasyLLM/langbatch/issues) in GitHub, if you need a support for a new provider. 
+    LangBatch is designed to support multiple providers. We will add support for more providers in the future. Please raise an [Issue](https://github.com/EasyLLM/langbatch/issues){:target="_blank"} in GitHub, if you need a support for a new provider. 

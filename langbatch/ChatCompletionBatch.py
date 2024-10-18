@@ -45,7 +45,7 @@ class ChatCompletionBatch(Batch):
                 [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is the capital of France?"}],
                 [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is the capital of Germany?"}]
             ],
-            request_kwargs={"model": "gemini-1.5-flash-001"},
+            request_kwargs={"model": "gemini-1.5-flash-002"},
             batch_kwargs={
                 "gcp_project": "your-gcp-project", 
                 "bigquery_input_dataset": "your-bigquery-input-dataset", 

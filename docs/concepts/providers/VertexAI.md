@@ -34,7 +34,7 @@ from langbatch.vertex import VertexChatCompletionBatch
 
 batch = VertexChatCompletionBatch(
     file="data.jsonl",
-    model_name="gemini-1.5-flash-001",
+    model_name="gemini-1.5-flash-002",
     project=GCP_PROJECT,
     location=GCP_LOCATION,
     bigquery_input_dataset="batches",

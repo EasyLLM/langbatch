@@ -11,6 +11,13 @@ This will install the core LangBatch package.
 ## Optional Provider Dependencies
 Core LangBatch package only supports OpenAI and OpenAI compatible providers. For Other providers, you need to install additional dependencies.
 
+- Anthropic:
+```bash
+pip install langbatch[Anthropic]
+```
+
+This will install the dependencies for using the Anthropic with LangBatch.
+
 - VertexAI:
 ```bash
 pip install langbatch[VertexAI]
@@ -43,7 +50,7 @@ pip install git+https://github.com/EasyLLM/langbatch.git
 ```
 
 ## Install from source
-If you're planning to contribute and make modifications to the code, ensure that you clone the repository and set it up as an [editable install](https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs).
+If you're planning to contribute and make modifications to the code, ensure that you clone the repository and set it up as an [editable install](https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs){:target="_blank"}.
 
 ```bash
 git clone https://github.com/EasyLLM/langbatch.git 

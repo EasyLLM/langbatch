@@ -71,17 +71,18 @@ batch_handler = BatchHandler(
 
 ## Batch Kwargs
 
-You can pass additional kwargs to the batch process function by passing the `batch_kwargs` parameter to the `BatchHandler` constructor. These are used to initialize the batch object.
+You can pass additional kwargs to the batch process function by passing the `batch_kwargs` parameter to the `BatchHandler` constructor. These kwargs are used to initialize the batch object.
 
 ```python
 batch_handler = BatchHandler(
     batch_process_func=process_batch,
     batch_type=VertexChatCompletionBatch,
     batch_kwargs={
-        "model_name": "gemini-1.5-flash-001",
+        "model_name": "gemini-1.5-flash-002",
         "project": "my-project",
         "location": "us-central1",
         "bigquery_input_dataset": "input-dataset",
         "bigquery_output_dataset": "output-dataset"
     }
 )
+```

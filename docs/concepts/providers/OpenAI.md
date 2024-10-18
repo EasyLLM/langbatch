@@ -31,7 +31,7 @@ batch = OpenAIChatCompletionBatch(
 batch.start()
 ```
 
-Refer to [OpenAI Batch API Documentation](https://platform.openai.com/docs/guides/batch) for more information.
+Refer to [OpenAI Batch API Documentation](https://platform.openai.com/docs/guides/batch){:target="_blank"} for more information.
 
 ## Other Providers with OpenAI API support
 

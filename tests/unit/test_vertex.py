@@ -57,14 +57,14 @@ def test_vertex_batch_create(test_data_file):
             requests.append(req)
     
     batch = VertexChatCompletionBatch.create_from_requests(requests, batch_kwargs={
-        "model_name": "gemini-1.5-flash-001",
+        "model_name": "gemini-1.5-flash-002",
         "gcp_project": GCP_PROJECT,
         "bigquery_input_dataset": BIGQUERY_INPUT_DATASET,
         "bigquery_output_dataset": BIGQUERY_OUTPUT_DATASET
     })
     
     assert isinstance(batch, VertexChatCompletionBatch)
-    assert batch.model_name == "gemini-1.5-flash-001"
+    assert batch.model_name == "gemini-1.5-flash-002"
     assert batch.gcp_project == GCP_PROJECT
     assert batch.bigquery_input_dataset == BIGQUERY_INPUT_DATASET
     assert batch.bigquery_output_dataset == BIGQUERY_OUTPUT_DATASET
@@ -113,7 +113,7 @@ def test_vertex_batch_get_status(vertex_batch: VertexChatCompletionBatch, monkey
 def test_vertex_batch_convert_request(test_data_file):
     batch = VertexChatCompletionBatch(
         file=test_data_file,
-        model_name="gemini-1.5-flash-001",
+        model_name="gemini-1.5-flash-002",
         gcp_project=GCP_PROJECT,
         bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
         bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
@@ -163,7 +163,7 @@ def test_vertex_batch_convert_request(test_data_file):
 def test_vertex_batch_convert_response(test_data_file):
     batch = VertexChatCompletionBatch(
         file=test_data_file,
-        model_name="gemini-1.5-flash-001",
+        model_name="gemini-1.5-flash-002",
         gcp_project=GCP_PROJECT,
         bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
         bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET

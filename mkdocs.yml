@@ -26,6 +26,7 @@ nav:
     - Providers: 
       - concepts/providers/index.md
       - OpenAI: concepts/providers/OpenAI.md
+      - Anthropic: concepts/providers/Anthropic.md
       - Azure OpenAI: concepts/providers/AzureOpenAI.md
       - VertexAI: concepts/providers/VertexAI.md
   - 🛠️ How-to Guides: 
@@ -42,9 +43,11 @@ nav:
         - OpenAIEmbeddingBatch: references/providers/OpenAI/OpenAIEmbeddingBatch.md
       - VertexAI: 
         - VertexChatCompletionBatch: references/providers/VertexAI/VertexAIChatCompletionBatch.md
+      - Anthropic:
+        - AnthropicChatCompletionBatch: references/providers/Anthropic/AnthropicChatCompletionBatch.md
     - Pipeline Utils:
       - BatchStorage: references/utils/BatchStorage.md
-      - BatchQueueStorage: references/utils/BatchQueueStorage.md
+      - BatchQueue: references/utils/BatchQueue.md
       - BatchHandler: references/utils/BatchHandler.md
       - RequestQueue: references/utils/RequestQueue.md
       - BatchDispatcher: references/utils/BatchDispatcher.md
