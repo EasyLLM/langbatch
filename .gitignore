@@ -1,5 +1,5 @@
 *.env
 *.pyc
 *.json
-data
+langbatch_data
 others

@@ -1,0 +1,2 @@
+{"custom_id": "6d292082-5c65-4b70-9900-a1418e49d5e7", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-ada-002"}}
+{"custom_id": "b8bf1ed2-2ec3-45f9-81b0-97813ad70ae4", "method": "POST", "url": "/v1/embeddings", "body": { "input": "I am feeling good today"}}

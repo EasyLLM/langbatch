@@ -6,7 +6,7 @@ import httpx
 
 def get_data_path():
     # Default data path, can be overridden by environment variable
-    data_path = Path(__file__).parent.parent / "data"
+    data_path = Path(__file__).parent.parent / "langbatch_data"
 
     def check_path_writable(path):
         if not path.is_dir():
