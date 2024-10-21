@@ -1,6 +1,0 @@
-*.json
-*.jsonl
-*.env
-*.pyc
-langbatch_data
-others
