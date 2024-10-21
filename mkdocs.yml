@@ -1,0 +1,140 @@
+site_name: LangBatch
+site_url: https://langbatch.genmodels.exchange
+repo_name: EasyLLM/langbatch
+repo_url: https://github.com/EasyLLM/langbatch
+watch:
+  - langbatch
+
+# Navigation
+nav:
+  - "": index.md
+  - 🚀 Get Started: 
+    - getstarted/index.md
+    - Installation: getstarted/install.md
+    - Running a Batch: getstarted/batch.md
+  - 📚 Core Concepts: 
+    - concepts/index.md
+    - Batch Types: 
+      - concepts/types/index.md
+      - Batch: concepts/types/batch.md
+      - Chat Completion: concepts/types/chat_completion.md
+      - Embedding: concepts/types/embedding.md
+    - Pipeline: 
+      - concepts/pipeline/index.md
+      - Batch Handler: concepts/pipeline/batch_handler.md
+      - Batch Dispatcher: concepts/pipeline/batch_dispatcher.md
+    - Providers: 
+      - concepts/providers/index.md
+      - OpenAI: concepts/providers/OpenAI.md
+      - Anthropic: concepts/providers/Anthropic.md
+      - Azure OpenAI: concepts/providers/AzureOpenAI.md
+      - VertexAI: concepts/providers/VertexAI.md
+  - 🛠️ How-to Guides: 
+    - howtos/index.md
+    - Sample API Service - Stream to Batch pipeline: howtos/batch_dispatcher_service.md
+    - Stream to Batch pipeline with RedisRequestQueue: howtos/batch_dispatcher_service_redis.md
+  - 📖 References:
+    - Batch: references/Batch.md
+    - ChatCompletionBatch: references/ChatCompletion.md
+    - EmbeddingBatch: references/Embedding.md
+    - Providers:
+      - OpenAI: 
+        - OpenAIChatCompletionBatch: references/providers/OpenAI/OpenAIChatCompletionBatch.md
+        - OpenAIEmbeddingBatch: references/providers/OpenAI/OpenAIEmbeddingBatch.md
+      - VertexAI: 
+        - VertexChatCompletionBatch: references/providers/VertexAI/VertexAIChatCompletionBatch.md
+      - Anthropic:
+        - AnthropicChatCompletionBatch: references/providers/Anthropic/AnthropicChatCompletionBatch.md
+    - Pipeline Utils:
+      - BatchStorage: references/utils/BatchStorage.md
+      - BatchQueue: references/utils/BatchQueue.md
+      - BatchHandler: references/utils/BatchHandler.md
+      - RequestQueue: references/utils/RequestQueue.md
+      - BatchDispatcher: references/utils/BatchDispatcher.md
+  - ❤️ Community: community/index.md
+
+# Material-Docs Theme
+theme:
+  name: material
+  logo: _static/imgs/langbatch-logo.png
+  favicon: _static/favicon.ico
+  palette:
+    scheme: slate
+    accent: white
+  features:
+    - content.tabs.link
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - announce.dismiss
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.expand
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.top
+    - navigation.tracking
+    - navigation.footer
+    
+    - search.suggest
+    - search.highlight
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - admonition
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - pymdownx.arithmatex:
+      generic: true
+
+# Extra CSS
+extra_css:
+  - extra/style.css
+
+# Plugins
+extra:
+  version:
+    provider: mike
+    alias: true
+    default: latest
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_if_no_docstring: false
+            show_root_toc_entry: true
+            members_order: source
+            docstring_options:
+              ignore_init_summary: false
+            docstring_section_style: list
+            inherited_members: false
+            merge_init_into_class: false
+            preload_modules: [langbatch]
+            show_bases: true
+            show_root_heading: true
+            show_root_full_path: true
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            show_source: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            unwrap_annotated: true
+  - glightbox

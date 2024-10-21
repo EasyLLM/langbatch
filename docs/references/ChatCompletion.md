@@ -1,0 +1,2 @@
+# ChatCompletionBatch
+::: langbatch.ChatCompletionBatch.ChatCompletionBatch

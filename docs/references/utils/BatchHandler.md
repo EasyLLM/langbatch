@@ -1,0 +1,4 @@
+# BatchHandler
+
+::: langbatch.BatchHandler
+

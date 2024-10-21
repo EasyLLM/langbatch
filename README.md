@@ -3,7 +3,7 @@
   src="./docs/_static/imgs/langbatch-logo.png">
 </h1>
 <p align="center">
-  <i>Call all Batch APIs using the OpenAI format [OpenAI, Anthropic, Azure OpenAI, VertexAI]</i>
+  <i>Call all Batch APIs using the OpenAI format [OpenAI, Anthropic, Azure OpenAI, Vertex AI]</i>
 </p>
 
 <p align="center">
@@ -26,12 +26,12 @@
 
 <h4 align="center">
     <p>
-        <a href="https://langbatch.easyllm.tech/">Documentation</a> |
+        <a href="https://langbatch.genmodels.exchange/">Documentation</a> |
         <a href="https://discord.gg/7FS87Rfb">Join Discord</a> 
     <p>
 </h4>
 
-LangBatch is a Python library for large scale AI generation using batch APIs from providers like OpenAI, Azure OpenAI, GCP VertexAI, etc.  
+LangBatch is a Python library for large scale AI generation using batch APIs from providers like OpenAI, Azure OpenAI, GCP Vertex AI, etc.  
 
 ## Utlize Batch APIs for
 
@@ -45,6 +45,7 @@ LangBatch is a Python library for large scale AI generation using batch APIs fro
 - Unified API to access Batch APIs from different providers.
 - Standarized OpenAI format for requests and responses
 - Utilities for handling the complete lifecycle of a batch job: Creating, Starting, Monitoring, Retrying and Processing Completed
+- Convert incoming requests into batch jobs
 
 ## Installation
 
@@ -60,6 +61,8 @@ Alternatively, from source:
 pip install git+https://github.com/EasyLLM/langbatch
 ```
 
+Find the complete [Installation](https://langbatch.genmodels.exchange/installation/) guide here.
+
 ### Quickstart
 
 Here is the 3 main lines to start a batch job:
@@ -69,4 +72,40 @@ batch = OpenAIChatCompletionBatch("openai_chat_completion_requests.jsonl")
 batch.start()
 ```
 
-Find the complete [Get Started](https://langbatch.easyllm.tech/getstarted/batch/) guide here.
+Check the status of the batch and get the results:
+```python
+if batch.get_status() == "completed":
+    results, _ = batch.get_results()
+    for result in results:
+        print(f"Custom ID: {result['custom_id']}")
+        print(f"Content: {result['choices'][0]['message']['content']}")
+```
+
+Find the complete [Get Started](https://langbatch.genmodels.exchange/getstarted/batch/) guide here.
+
+## 🫂 Community
+
+If you want to get more involved with LangBatch, check out our [discord server](https://discord.gg/7FS87Rfb)
+
+## Contributors
+
+```yml
++----------------------------------------------------------------------------+
+|     +----------------------------------------------------------------+     |
+|     | Developers: Those who built with `langbatch`.                  |     |
+|     | (You have `import langbatch` somewhere in your project)        |     |
+|     |     +----------------------------------------------------+     |     |
+|     |     | Contributors: Those who make `langbatch` better.   |     |     |
+|     |     | (You make PR to this repo)                         |     |     |
+|     |     +----------------------------------------------------+     |     |
+|     +----------------------------------------------------------------+     |
++----------------------------------------------------------------------------+
+```
+
+We welcome contributions from the community! Whether it's bug fixes, feature additions, or documentation improvements, your input is valuable.
+
+1. Fork the repository
+2. Create your feature branch (git checkout -b feature/AmazingFeature)
+3. Commit your changes (git commit -m 'Add some AmazingFeature')
+4. Push to the branch (git push origin feature/AmazingFeature)
+5. Open a Pull Request

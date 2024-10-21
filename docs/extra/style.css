@@ -1,0 +1,51 @@
+body {
+  background-color: black !important;
+  color: white;
+  margin: 0;
+  padding: 0;
+  color-scheme: dark !important;
+  font-family: "Satoshi", Arial, sans-serif !important;
+}
+.md-tabs {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  margin: auto !important;
+  border-radius: 10px !important;
+}
+
+.md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
+  background: black !important;
+  box-shadow: none !important;
+}
+.md-search__scrollwrap {
+  background: black !important;
+  color: white !important;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("./fonts/Satoshi-Variable.ttf") format("truetype"),
+    url("./fonts/Satoshi-VariableItalic.ttf") format("truetype");
+}
+h1 {
+  font-size: 2em;
+  font-weight: 500 !important;
+  margin: 0;
+  color: white !important;
+}
+.md-nav__title {
+  color: white;
+  box-shadow: none !important;
+  background: none !important;
+}
+.md-nav__link--active {
+  color: rgb(255, 200, 0) !important;
+}
+.md-header {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  backdrop-filter: blur(100px) !important;
+  -webkit-backdrop-filter: blur(100px) !important;
+  width: 70% !important;
+  margin: auto !important;
+  border-radius: 10px !important;
+}

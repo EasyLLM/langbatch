@@ -1,0 +1,5 @@
+{"custom_id": "1", "request": {"contents": [{"role": "user", "parts": {"text": "Give me a recipe for banana bread."}}], "system_instruction": {"parts": [{"text": "You are a chef."}]}}}
+{"custom_id": "2", "request": {"contents": [{"role": "user", "parts": {"text": "Give me a recipe for chocolate cake."}}], "system_instruction": {"parts": [{"text": "You are a chef."}]}}}
+{"custom_id": "3", "request": {"contents": [{"role": "user", "parts": {"text": "Give me a recipe for Paneer Butter Masala."}}], "system_instruction": {"parts": [{"text": "You are a chef."}]}}}
+{"custom_id": "4", "request": {"contents": [{"role": "user", "parts": {"text": "Give me a recipe for Chetinad Chicken Gravy."}}], "system_instruction": {"parts": [{"text": "You are a chef."}]}}}
+{"custom_id": "5", "request": {"contents": [{"role": "user", "parts": {"text": "Give me a recipe for Madurai Mutton Kari Dosai"}}], "system_instruction": {"parts": [{"text": "You are a chef."}]}}}
