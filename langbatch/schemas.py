@@ -1,5 +1,5 @@
 from typing import Dict, List, Union, Iterable, Optional
-from typing_extensions import Literal, override
+from typing_extensions import Literal
 from pydantic import BaseModel
 
 from openai.types.chat_model import ChatModel

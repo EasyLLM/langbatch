@@ -4,8 +4,6 @@ from collections import deque
 from abc import ABC, abstractmethod
 import json
 
-import redis
-
 class RequestQueue(ABC):
     """
     RequestQueue is an abstract class for request queues.
@@ -70,6 +68,7 @@ class InMemoryRequestQueue(RequestQueue):
         return len(self.queue)
     
 class RedisRequestQueue(RequestQueue):
+    import redis
     """
     RedisRequestQueue is a request queue that uses a Redis list to store requests.
 

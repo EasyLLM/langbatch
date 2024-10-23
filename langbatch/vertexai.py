@@ -5,7 +5,6 @@ from typing import Any, Dict
 
 import jsonlines
 from vertexai.preview.batch_prediction import BatchPredictionJob
-from google.cloud import bigquery
 
 from langbatch.Batch import Batch
 from langbatch.ChatCompletionBatch import ChatCompletionBatch

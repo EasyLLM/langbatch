@@ -1,6 +1,6 @@
 import time
 from typing import Any, Dict, List, Optional
-from jsonlines import open as jsonlines_open
+import jsonlines
 from anthropic import Anthropic
 from anthropic.types.beta.message_create_params import MessageCreateParamsNonStreaming
 from anthropic.types.beta.messages.batch_create_params import Request
@@ -85,7 +85,7 @@ class AnthropicBatch(Batch):
             raise ValueError("Batch not started")
         
         file_path = self._create_results_file_path()
-        with jsonlines_open(file_path, mode='w') as writer:
+        with jsonlines.open(file_path, mode='w') as writer:
             for result in self.client.beta.messages.batches.results(
                 self.platform_batch_id
             ):

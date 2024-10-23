@@ -1,7 +1,6 @@
 from typing import Iterable, List, Dict, Any, Tuple
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from langbatch.Batch import Batch
-import jsonlines
 
 class ChatCompletionBatch(Batch):
     """
