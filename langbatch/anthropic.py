@@ -63,7 +63,6 @@ class AnthropicBatch(Batch):
             requests=data,
         )
         self.platform_batch_id = response.id
-        self.save()
 
     def start(self):
         if self.platform_batch_id is not None:

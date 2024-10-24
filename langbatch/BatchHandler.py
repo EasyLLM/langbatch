@@ -92,6 +92,7 @@ class BatchHandler:
         if batch.id in self.queues["pending"]:
             try:
                 await asyncio.to_thread(batch.start)
+                await asyncio.to_thread(batch.save, self.batch_storage)
                 self.queues["processing"].append(batch.id)
                 logger.info(f"Moved batch {batch.id} from pending to processing queue")
             except:

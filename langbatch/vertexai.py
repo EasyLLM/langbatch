@@ -116,7 +116,6 @@ class VertexAIBatch(Batch):
         )
 
         self.platform_batch_id = job.name
-        self.save()
 
     def start(self):
         if self.platform_batch_id is not None:

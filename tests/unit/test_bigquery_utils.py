@@ -26,6 +26,7 @@ def requests(test_data_file):
             requests.append({"custom_id": req["custom_id"], "request": json.dumps(req["request"])})
     return requests
 
+@pytest.mark.slow
 def test_create_and_drop_table():
     client = bigquery.Client()
 
@@ -40,6 +41,7 @@ def test_create_and_drop_table():
     with pytest.raises(Exception):
         client.get_table(table_id)
 
+@pytest.mark.slow
 @pytest.mark.parametrize('test_data_file', ['vertexai_requests.jsonl'], indirect=True)
 def test_write_and_read_data_from_bigquery(requests):
     table_id = str(uuid.uuid4())
@@ -67,6 +69,7 @@ def test_write_and_read_data_from_bigquery(requests):
         # Clean up: drop the table after the test
         drop_table(PROJECT_ID, DATASET_ID, table_id)
 
+@pytest.mark.slow
 def test_write_data_to_bigquery_error():
     data = [
         {"custom_id": "1", "request": {"contents": [{"role": "user", "parts": {"text": "Give me a recipe for banana bread."}}]}},

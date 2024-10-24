@@ -60,8 +60,6 @@ class OpenAIBatch(Batch):
         )
         self.platform_batch_id = batch.id
 
-        self.save()
-
     def start(self):
         if self.platform_batch_id is not None:
             raise ValueError("Batch already started")
