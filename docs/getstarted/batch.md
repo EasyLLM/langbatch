@@ -28,7 +28,7 @@ for result in successful_results:
     print(f"Content: {result['choices'][0]['message']['content']}")
 ```
 
-!!! note
+!!! tip
     You can perform the same actions with other providers and models. 
     For example, use the `AnthropicChatCompletionBatch` class to run batches with the Anthropic models.
     Check out the [Providers](/concepts/providers/) section to learn more.

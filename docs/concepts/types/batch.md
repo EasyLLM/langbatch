@@ -28,7 +28,7 @@ batch = OpenAIChatCompletionBatch.create([
 ])
 ```
 
-!!! note
+!!! info
     When you initialize a batch, it is not started automatically. You need to call the `start` method to start the batch job.
 
 ## Start a Batch
@@ -55,7 +55,7 @@ Incase of any failure with batch job due to rate limits, exceeded 24h wait time 
 batch.retry()
 ```
 
-!!! note
+!!! info
     A batch instance in LangBatch can be retried multiple times. It will internally create multiple batch jobs until the batch is successful.
 
 ## Get Batch Results
@@ -120,7 +120,7 @@ batch = OpenAIChatCompletionBatch("data.jsonl", storage=storage)
 batch.save()
 ```
 
-!!! note
+!!! info
     By default, File based storage will be used to save the batch. You can also pass a custom storage instance when initializing the batch.
 
 ## Load Batch

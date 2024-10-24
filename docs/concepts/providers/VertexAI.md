@@ -21,8 +21,17 @@ import vertexai
 
 GCP_PROJECT = os.environ.get('GCP_PROJECT')
 GCP_LOCATION = os.environ.get('GCP_LOCATION')
-
 vertexai.init(project=GCP_PROJECT, location=GCP_LOCATION)
+```
+
+!!! tip
+    You can use a service account to avoid the frequent authentication error `google.auth.exceptions.RefreshError: Reauthentication is needed. Please run "gcloud auth application-default login" to reauthenticate`. A service account is long-lived as it does not have an expiry time. You can create a service account with only required permissions - `Vertex AI user`, `BigQuery Data Editor` and `BigQuery User`. Check [Service Account Creation](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/gcp.html#service-account) for more information.
+
+You can either set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of the service account key file or use the following code to set the credentials.
+
+```python
+import os
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "path/to/service-account-key.json"
 ```
 
 ## Vertex AI Batch
@@ -43,5 +52,5 @@ batch = VertexAIChatCompletionBatch(
 batch.start()
 ```
 
-!!!note
+!!!info
     You need to make sure that the BigQuery datasets are created before running the batch.

@@ -29,6 +29,6 @@ batch = OpenAIChatCompletionBatch(file="data.jsonl", client=client)
 batch.start()
 ```
 
-!!! note
+!!! info
     Azure OpenAI does not support Text Embedding models and Finetuned LLMs yet.
     Refer to [Azure OpenAI Batch APIDocumentation](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/batch?pivots=programming-language-python){:target="_blank"} for more information.

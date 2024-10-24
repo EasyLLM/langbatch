@@ -15,5 +15,5 @@ LangBatch currently supports the following providers:
 - [Providers with OpenAI Batch API Support](./OpenAI.md/#other-providers-with-openai-api-support)
 </div>
 
-!!! note
+!!! info
     LangBatch is designed to support multiple providers. We will add support for more providers in the future. Please raise an [Issue](https://github.com/EasyLLM/langbatch/issues){:target="_blank"} in GitHub, if you need a support for a new provider. 
