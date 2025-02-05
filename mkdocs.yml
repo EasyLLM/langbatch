@@ -42,7 +42,9 @@ nav:
         - OpenAIChatCompletionBatch: references/providers/OpenAI/OpenAIChatCompletionBatch.md
         - OpenAIEmbeddingBatch: references/providers/OpenAI/OpenAIEmbeddingBatch.md
       - VertexAI: 
-        - VertexChatCompletionBatch: references/providers/VertexAI/VertexAIChatCompletionBatch.md
+        - VertexAIChatCompletionBatch: references/providers/VertexAI/VertexAIChatCompletionBatch.md
+        - VertexAILlamaChatCompletionBatch: references/providers/VertexAI/VertexAILlamaChatCompletionBatch.md
+        - VertexAIClaudeChatCompletionBatch: references/providers/VertexAI/VertexAIClaudeChatCompletionBatch.md
       - Anthropic:
         - AnthropicChatCompletionBatch: references/providers/Anthropic/AnthropicChatCompletionBatch.md
     - Pipeline Utils:
@@ -80,6 +82,7 @@ theme:
     
     - search.suggest
     - search.highlight
+    
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true

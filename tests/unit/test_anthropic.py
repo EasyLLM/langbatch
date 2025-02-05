@@ -143,12 +143,12 @@ def test_anthropic_batch_convert_response(anthropic_batch: AnthropicChatCompleti
     }
     response["result"]["message"]["content"] = content
 
-    class CustomResponse(BaseModel):
-        custom_id: str
-        result: BetaMessageBatchSucceededResult
-    custom_response = CustomResponse(**response)
+    # class CustomResponse(BaseModel):
+    #     custom_id: str
+    #     result: BetaMessageBatchSucceededResult
+    # custom_response = CustomResponse(**response)
     
-    converted = anthropic_batch._convert_response(custom_response)
+    converted = anthropic_batch._convert_response(response)
     
     assert converted["id"] == "test_id"
     assert converted["custom_id"] == "test_id"
@@ -173,8 +173,8 @@ def test_anthropic_batch_convert_response(anthropic_batch: AnthropicChatCompleti
         }
     ]
     response["result"]["message"]["content"] = content
-    custom_response = CustomResponse(**response)
-    converted = anthropic_batch._convert_response(custom_response)
+    # custom_response = CustomResponse(**response)
+    converted = anthropic_batch._convert_response(response)
     assert converted["response"]["body"]["choices"][0]["message"]["content"] == [content[0]]
     assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["id"] == content[1]["id"]
     assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["function"]["name"] == content[1]["name"]

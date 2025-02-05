@@ -68,7 +68,6 @@ class InMemoryRequestQueue(RequestQueue):
         return len(self.queue)
     
 class RedisRequestQueue(RequestQueue):
-    import redis
     """
     RedisRequestQueue is a request queue that uses a Redis list to store requests.
 
@@ -93,7 +92,14 @@ class RedisRequestQueue(RequestQueue):
     ])
     ```
     """
-    def __init__(self, redis_client: redis.Redis, queue_name: str = 'request_queue'):
+    def __init__(self, redis_client: Any, queue_name: str = 'request_queue'):
+        try:
+            import redis
+            if not isinstance(redis_client, redis.Redis):
+                raise TypeError("redis_client must be an instance of redis.Redis")
+        except ImportError:
+            raise ImportError("redis package is required for RedisRequestQueue. Run: pip install langbatch[redis]")
+            
         self.redis_client = redis_client
         self.queue_name = queue_name
 

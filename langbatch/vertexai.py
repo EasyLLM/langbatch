@@ -9,7 +9,8 @@ from vertexai.preview.batch_prediction import BatchPredictionJob
 from langbatch.Batch import Batch
 from langbatch.ChatCompletionBatch import ChatCompletionBatch
 from langbatch.bigquery_utils import write_data_to_bigquery, read_data_from_bigquery, create_table
-from langbatch.schemas import VertexAIChatCompletionRequest
+from langbatch.schemas import VertexAIChatCompletionRequest, OpenAIChatCompletionRequest, AnthropicChatCompletionRequest
+from langbatch.claude_utils import convert_request, convert_message
 
 vertexai_state_map = {
     'JOB_STATE_UNSPECIFIED': 'unspecified',
@@ -29,6 +30,8 @@ class VertexAIBatch(Batch):
     Implements the Batch class for Vertex AI API.
     """
     _url: str = "/v1/chat/completions"
+    field_name: str = "request"
+    publisher: str = "google"
 
     def __init__(self, file: str, model_name: str, gcp_project: str, bigquery_input_dataset: str, bigquery_output_dataset: str) -> None:
         """
@@ -80,7 +83,7 @@ class VertexAIBatch(Batch):
         return meta_data
 
     def _create_table(self, dataset_id: str):
-        return create_table(self.gcp_project, dataset_id, self.id)
+        return create_table(self.gcp_project, dataset_id, self.id, self.field_name)
 
     @abstractmethod
     def _convert_request(self, req: dict) -> str:
@@ -90,11 +93,7 @@ class VertexAIBatch(Batch):
         requests = self._get_requests()
         data = []
         for request in requests:
-            data.append(
-                { "custom_id": request["custom_id"],
-                 "request": self._convert_request(request["body"])
-                }
-            )
+            data.append(self._convert_request(request))
         return data
 
     def _upload_batch_file(self):
@@ -102,7 +101,7 @@ class VertexAIBatch(Batch):
             self._create_table(self.bigquery_input_dataset)
 
         data = self._prepare_data()
-        status = write_data_to_bigquery(self.gcp_project, self.bigquery_input_dataset, self.id, data)
+        status = write_data_to_bigquery(self.gcp_project, self.bigquery_input_dataset, self.id, data, self.field_name)
         if not status:
             raise ValueError("Error writing data to BigQuery")
         
@@ -110,7 +109,7 @@ class VertexAIBatch(Batch):
 
     def _create_batch(self, input_dataset, output_dataset):
         job = BatchPredictionJob.submit(
-            self.model_name,
+            f"publishers/{self.publisher}/models/{self.model_name}",
             input_dataset,
             output_uri_prefix = output_dataset
         )
@@ -202,7 +201,7 @@ class VertexAIChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
             "generationConfig": {}
         }
 
-        request = VertexAIChatCompletionRequest(**req)
+        request = VertexAIChatCompletionRequest(**req["body"])
 
         # Convert messages
         for message in request.messages:
@@ -281,7 +280,10 @@ class VertexAIChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
         gen_config = {k: v for k, v in gen_config.items() if v is not None}
         custom_schema["generationConfig"] = gen_config
 
-        return json.dumps(custom_schema, indent=2)
+        return { 
+            "custom_id": req["custom_id"],
+            "request": json.dumps(custom_schema, indent=2)
+        }
 
     def _convert_response(self, response):
         # Parse the input JSON
@@ -383,3 +385,88 @@ class VertexAIChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
 
     def _validate_request(self, request):
         VertexAIChatCompletionRequest(**request)
+
+class VertexAIClaudeChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
+    _url: str = "/v1/chat/completions"
+    publisher: str = "anthropic"
+    field_name: str = "request"
+
+    def _convert_request(self, req: dict) -> str:
+        request = convert_request(req)
+        request["anthropic_version"] = "vertex-2023-10-16"
+        del request["model"]
+
+        return {
+            "custom_id": req["custom_id"],
+            "request": json.dumps(request, indent=2)
+        }
+
+    def _convert_response(self, response):
+        response_data = json.loads(response["response"])
+
+        status = response["status"]
+        if status != "":
+            if "Bad Request: " in status:
+                error_data = json.loads(status.split("Bad Request: ")[1])
+            else:
+                error_data = {
+                    "message": status,
+                    "code": "server_error"
+                }
+
+            error = {
+                "message": error_data["error"]["message"],
+                "code": error_data["error"]["code"]
+            }
+
+            res = None
+        else:
+            res= convert_message(response_data, response["custom_id"])
+            error = None
+
+        output = {
+            "id": f'{response["custom_id"]}',
+            "custom_id": response["custom_id"],
+            "response": res,
+            "error": error
+        }
+
+        return output
+
+    def _validate_request(self, request):
+        AnthropicChatCompletionRequest(**request)
+
+class VertexAILlamaChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
+    _url: str = "/v1/chat/completions"
+    publisher: str = "meta"
+    field_name: str = "body"
+
+    def _convert_request(self, req: dict) -> str:
+        request = OpenAIChatCompletionRequest(**req["body"])
+
+        request.model = f"meta/{self.model_name}"
+
+        return {
+            "custom_id": req["custom_id"],
+            "body": request.model_dump_json()
+        }
+
+    def _convert_response(self, response):
+        response_data = json.loads(response["response"])
+        res = {
+            "request_id": response["custom_id"],
+            "status_code": 200,
+            "body": response_data,
+            
+        }
+        output = {
+            "id": f'{response["id"]}',
+            "custom_id": response["custom_id"],
+            "response": res,
+            "error": response["error"]
+        }
+
+        return output
+
+    def _validate_request(self, request):
+        OpenAIChatCompletionRequest(**request)

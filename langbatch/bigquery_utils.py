@@ -4,15 +4,23 @@ from google.cloud.bigquery_storage_v1 import types, writer
 from google.protobuf import descriptor_pb2
 from google.cloud import bigquery
 from langbatch.record_pb2 import BatchRecord
+from langbatch.record_llama_pb2 import BatchRecord as BatchRecordLlama
 import time
 
-def create_row_data(custom_id: str, request: str):
-    row = BatchRecord()
-    row.custom_id = custom_id
-    row.request = request
+def create_row_data(custom_id: str, text: str, field_name: str = "request"):
+    if field_name == "request":
+        row = BatchRecord()
+        row.custom_id = custom_id
+        row.request = text
+    elif field_name == "body":
+        row = BatchRecordLlama()
+        row.custom_id = custom_id
+        row.method = "POST"
+        row.url = "/v1/chat/completions"
+        row.body = text
     return row.SerializeToString()
 
-def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data: list):
+def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data: list, field_name: str = "request"):
     try:
         write_client = bigquery_storage_v1.BigQueryWriteClient()
         parent = write_client.table_path(project_id, dataset_id, table_id)
@@ -38,7 +46,10 @@ def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data
         proto_descriptor = descriptor_pb2.DescriptorProto()
         proto_descriptor.name = "Row"
         proto_descriptor.field.add(name="custom_id", number=1, type=descriptor_pb2.FieldDescriptorProto.TYPE_STRING)
-        proto_descriptor.field.add(name="request", number=2, type=descriptor_pb2.FieldDescriptorProto.TYPE_STRING)
+        if field_name == "body":
+            proto_descriptor.field.add(name="method", number=2, type=descriptor_pb2.FieldDescriptorProto.TYPE_STRING)
+            proto_descriptor.field.add(name="url", number=3, type=descriptor_pb2.FieldDescriptorProto.TYPE_STRING)
+        proto_descriptor.field.add(name=field_name, number=4 if field_name == "body" else 2, type=descriptor_pb2.FieldDescriptorProto.TYPE_STRING)
         proto_schema.proto_descriptor = proto_descriptor
         proto_data = types.AppendRowsRequest.ProtoData()
         proto_data.writer_schema = proto_schema
@@ -54,7 +65,7 @@ def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data
             
             proto_rows = types.ProtoRows()
             for item in batch:
-                proto_rows.serialized_rows.append(create_row_data(item['custom_id'], item['request']))
+                proto_rows.serialized_rows.append(create_row_data(item['custom_id'], item[field_name], field_name))
 
             request = types.AppendRowsRequest()
             request.offset = i
@@ -71,12 +82,15 @@ def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data
         logging.error("Error writing data to BigQuery", exc_info=True)
         return False
 
-def create_table(project_id: str, dataset_id: str, id: str):
+def create_table(project_id: str, dataset_id: str, id: str, field_name: str = "request"):
     client = bigquery.Client()
     schema = [
-        bigquery.SchemaField("request", "STRING", mode="REQUIRED"),
-        bigquery.SchemaField("custom_id", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("custom_id", "STRING", mode="REQUIRED")
     ]
+    if field_name == "body":
+        schema.append(bigquery.SchemaField("method", "STRING", mode="REQUIRED"))
+        schema.append(bigquery.SchemaField("url", "STRING", mode="REQUIRED"))
+    schema.append(bigquery.SchemaField(field_name, "STRING", mode="REQUIRED"))
 
     table_id = f"{project_id}.{dataset_id}.{id}"
     table = bigquery.Table(table_id, schema=schema)

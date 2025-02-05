@@ -7,7 +7,7 @@ import pytest
 import jsonlines
 import vertexai
 from google.oauth2 import service_account
-from langbatch.vertexai import VertexAIChatCompletionBatch
+from langbatch.vertexai import VertexAIChatCompletionBatch, VertexAILlamaChatCompletionBatch, VertexAIClaudeChatCompletionBatch
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir
 
@@ -119,7 +119,7 @@ def test_vertexai_batch_convert_request(test_data_file):
         bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
     )
     
-    request = {
+    body = {
         "messages": [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Hello, how are you?"}
@@ -145,7 +145,12 @@ def test_vertexai_batch_convert_request(test_data_file):
         ]
     }
     
-    converted = json.loads(batch._convert_request(request))
+    request = {
+        "custom_id": "test_id",
+        "body": body
+    }
+
+    converted = json.loads(batch._convert_request(request)["request"])
     
     assert "contents" in converted
     assert "systemInstruction" in converted
@@ -218,3 +223,162 @@ def test_vertexai_batch_get_results(vertexai_batch: VertexAIChatCompletionBatch,
         assert successful_result["choices"] is not None
         assert len(successful_result["choices"]) > 0
         assert successful_result["choices"][0]["message"]["content"] is not None
+
+def test_vertexai_llama_batch_convert_request(test_data_file):
+    batch = VertexAILlamaChatCompletionBatch(
+        file=test_data_file,
+        model_name="llama-3.1-70b-instruct-maas",
+        gcp_project=GCP_PROJECT,
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
+    )
+    
+    body = {
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello, how are you?"}
+        ],
+        "model": "llama-3.1-70b-instruct-maas",
+        "temperature": 0.7,
+        "max_tokens": 100
+    }
+    
+    request = {
+        "custom_id": "test_id",
+        "body": body
+    }
+
+    converted = json.loads(batch._convert_request(request)["body"])
+    
+    assert converted["model"] == "meta/llama-3.1-70b-instruct-maas"
+    assert converted["messages"] == body["messages"]
+    assert converted["temperature"] == 0.7
+    assert converted["max_tokens"] == 100
+
+def test_vertexai_llama_batch_convert_response(test_data_file):
+    batch = VertexAILlamaChatCompletionBatch(
+        file=test_data_file,
+        model_name="llama-3.1-70b-instruct-maas",
+        gcp_project=GCP_PROJECT,
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
+    )
+    
+    response = {
+        "id": "test_id",
+        "custom_id": "test_id",
+        "response": json.dumps({
+            "id": "test_id",
+            "object": "chat.completion",
+            "created": 1234567890,
+            "model": "llama-3.1-70b-instruct-maas",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "Hello! How can I help?"},
+                    "finish_reason": "stop"
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 10,
+                "completion_tokens": 8,
+                "total_tokens": 18
+            }
+        }),
+        "error": None
+    }
+    
+    converted = batch._convert_response(response)
+    
+    assert converted["id"] == "test_id"
+    assert converted["custom_id"] == "test_id"
+    assert converted["response"]["body"]["choices"][0]["message"]["content"] == "Hello! How can I help?"
+    assert converted["error"] is None
+
+def test_vertexai_claude_batch_convert_request(test_data_file):
+    batch = VertexAIClaudeChatCompletionBatch(
+        file=test_data_file,
+        model_name="claude-3-5-haiku@20241022",
+        gcp_project=GCP_PROJECT,
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
+    )
+    
+    body = {
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello, how are you?"}
+        ],
+        "model": "claude-3-5-haiku@20241022",
+        "temperature": 0.7,
+        "max_tokens": 100,
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get the current weather",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {"type": "string"}
+                        },
+                        "required": ["location"]
+                    }
+                }
+            }
+        ]
+    }
+    
+    request = {
+        "custom_id": "test_id",
+        "body": body
+    }
+
+    converted = json.loads(batch._convert_request(request)["request"])
+    
+    assert converted["system"] == "You are a helpful assistant."
+    assert len(converted["messages"]) == 1
+    assert converted["messages"][0]["role"] == "user"
+    assert converted["messages"][0]["content"][0]["type"] == "text"
+    assert converted["messages"][0]["content"][0]["text"] == "Hello, how are you?"
+    assert converted["temperature"] == 0.7
+    assert converted["max_tokens"] == 100
+    assert len(converted["tools"]) == 1
+    assert converted["tools"][0]["name"] == "get_weather"
+    assert converted["anthropic_version"] == "vertex-2023-10-16"
+
+def test_vertexai_claude_batch_convert_response(test_data_file):
+    batch = VertexAIClaudeChatCompletionBatch(
+        file=test_data_file,
+        model_name="claude-3-5-haiku@20241022",
+        gcp_project=GCP_PROJECT,
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
+    )
+    
+    response = {
+        "custom_id": "test_id",
+        "status": "",
+        "response": json.dumps({
+            "id": "test_id",
+            "model": "claude-3-5-haiku@20241022",
+            "stop_reason": "stop",
+            "role": "assistant",
+            "content": "Hello! How can I help?",
+            "usage": {
+                "input_tokens": 10,
+                "output_tokens": 8
+            }
+        })
+    }
+    
+    converted = batch._convert_response(response)
+    
+    assert converted["id"] == "test_id"
+    assert converted["custom_id"] == "test_id"
+    assert converted["response"]["body"]["choices"][0]["message"]["content"] == "Hello! How can I help?"
+    assert converted["response"]["body"]["usage"]["prompt_tokens"] == 10
+    assert converted["response"]["body"]["usage"]["completion_tokens"] == 8
+    assert converted["response"]["body"]["usage"]["total_tokens"] == 18
+    assert converted["error"] is None
