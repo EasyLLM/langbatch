@@ -158,7 +158,7 @@ def convert_response_message(message):
         }
     elif isinstance(message['content'], list):
         tool_calls = []
-        content = []
+        content = None
         for item in message['content']:
             if item['type'] == 'tool_use':
                 tool_calls.append({
@@ -170,13 +170,15 @@ def convert_response_message(message):
                     }
                 })
             else:
-                content.append(item)
+                content = item
         
-        return {
+        message = {
             'role': message['role'],
             'content': content,
-            'tool_calls': tool_calls
         }
+        if len(tool_calls) > 0:
+            message['tool_calls'] = tool_calls
+        return message
 
 def convert_message(message, custom_id) -> dict:
     choice = {
