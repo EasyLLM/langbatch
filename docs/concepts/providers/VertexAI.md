@@ -66,7 +66,7 @@ batch.start()
 You can also use the partner models available in VertexAI. Claude from Anthropic and Llama from Meta are available in VertexAI. You need to enable them in below links before using them. 
 
 - [Claude 3.5 Sonnet v2](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-3-5-sonnet-v2)
-- [Claude 3.5 Haiku v2](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-3-5-haiku)
+- [Claude 3.5 Haiku](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-3-5-haiku)
 - [Llama 3.1 models](https://console.cloud.google.com/vertex-ai/publishers/meta/model-garden/llama-3.1-405b-instruct-maas)
 
 ### VertexAI Claude Batch

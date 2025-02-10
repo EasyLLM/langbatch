@@ -1,4 +1,4 @@
-# VertexAI Claude ChatCompletionBatch
+# VertexAIClaudeChatCompletionBatch
 
 ::: langbatch.vertexai.VertexAIClaudeChatCompletionBatch
     options:

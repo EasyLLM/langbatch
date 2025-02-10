@@ -48,8 +48,8 @@ class BedrockBatch(Batch):
         ```
         """
         super().__init__(file)
-        self.client = boto3.client(service_name='bedrock', region_name=region)
-        self.s3_client = boto3.resource('s3')
+        self._client = boto3.client(service_name='bedrock', region_name=region)
+        self._s3_client = boto3.resource('s3')
 
         self.model_name = model_name
         self.input_bucket = input_bucket
@@ -89,14 +89,14 @@ class BedrockBatch(Batch):
         with jsonlines.open('prepared_data.jsonl', mode='w') as writer:
             writer.write_all(data)
 
-        self.s3_client.Bucket(self.input_bucket).upload_file(
+        self._s3_client.Bucket(self.input_bucket).upload_file(
             'prepared_data.jsonl',
             f'{self.id}/input.jsonl'
         )
     
     def _create_batch(self):
         self._upload_batch_file()
-        job = self.client.create_model_invocation_job(
+        job = self._client.create_model_invocation_job(
             roleArn = self.service_role,
             jobName = self.id,
             modelId = self.model_name,
@@ -115,7 +115,7 @@ class BedrockBatch(Batch):
         if self.platform_batch_id is None:
             raise ValueError("Batch not started")
         
-        job = self.client.get_model_invocation_job(
+        job = self._client.get_model_invocation_job(
             jobIdentifier=self.platform_batch_id
         )
         return bedrock_state_map[job['status']]
@@ -128,7 +128,7 @@ class BedrockBatch(Batch):
         s3_path = f"{job_id}/input.jsonl.out"
 
         try:
-            self.s3_client.Bucket(self.output_bucket).download_file(s3_path, f"{job_id}_results.jsonl")
+            self._s3_client.Bucket(self.output_bucket).download_file(s3_path, f"{job_id}_results.jsonl")
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == "404":
                 return None
@@ -148,7 +148,7 @@ class BedrockBatch(Batch):
 
     def _get_errors(self):
         # Implement error retrieval logic for Anthropic API
-        job = self.client.get_model_invocation_job(jobIdentifier=self.platform_batch_id)
+        job = self._client.get_model_invocation_job(jobIdentifier=self.platform_batch_id)
         return job.get('message')
     
     def is_retryable_failure(self) -> bool:

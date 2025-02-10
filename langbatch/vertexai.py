@@ -30,8 +30,8 @@ class VertexAIBatch(Batch):
     Implements the Batch class for Vertex AI API.
     """
     _url: str = "/v1/chat/completions"
-    field_name: str = "request"
-    publisher: str = "google"
+    _field_name: str = "request"
+    _publisher: str = "google"
 
     def __init__(self, file: str, model_name: str, gcp_project: str, bigquery_input_dataset: str, bigquery_output_dataset: str) -> None:
         """
@@ -83,7 +83,7 @@ class VertexAIBatch(Batch):
         return meta_data
 
     def _create_table(self, dataset_id: str):
-        return create_table(self.gcp_project, dataset_id, self.id, self.field_name)
+        return create_table(self.gcp_project, dataset_id, self.id, self._field_name)
 
     @abstractmethod
     def _convert_request(self, req: dict) -> str:
@@ -101,7 +101,7 @@ class VertexAIBatch(Batch):
             self._create_table(self.bigquery_input_dataset)
 
         data = self._prepare_data()
-        status = write_data_to_bigquery(self.gcp_project, self.bigquery_input_dataset, self.id, data, self.field_name)
+        status = write_data_to_bigquery(self.gcp_project, self.bigquery_input_dataset, self.id, data, self._field_name)
         if not status:
             raise ValueError("Error writing data to BigQuery")
         
@@ -109,7 +109,7 @@ class VertexAIBatch(Batch):
 
     def _create_batch(self, input_dataset, output_dataset):
         job = BatchPredictionJob.submit(
-            f"publishers/{self.publisher}/models/{self.model_name}",
+            f"publishers/{self._publisher}/models/{self.model_name}",
             input_dataset,
             output_uri_prefix = output_dataset
         )
@@ -388,8 +388,8 @@ class VertexAIChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
 
 class VertexAIClaudeChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
     _url: str = "/v1/chat/completions"
-    publisher: str = "anthropic"
-    field_name: str = "request"
+    _publisher: str = "anthropic"
+    _field_name: str = "request"
 
     def _convert_request(self, req: dict) -> str:
         request = convert_request(req)
@@ -438,8 +438,8 @@ class VertexAIClaudeChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
 
 class VertexAILlamaChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
     _url: str = "/v1/chat/completions"
-    publisher: str = "meta"
-    field_name: str = "body"
+    _publisher: str = "meta"
+    _field_name: str = "body"
 
     def _convert_request(self, req: dict) -> str:
         request = OpenAIChatCompletionRequest(**req["body"])

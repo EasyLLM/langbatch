@@ -41,7 +41,7 @@ class AnthropicBatch(Batch):
         ```
         """
         super().__init__(file)
-        self.client = client
+        self._client = client
     
     def _create_meta_data(self) -> Dict[str, Any]:
         return {}
@@ -58,7 +58,7 @@ class AnthropicBatch(Batch):
     
     def _create_batch(self):
         data = self._prepare_data()
-        response = self.client.beta.messages.batches.create(
+        response = self._client.beta.messages.batches.create(
             requests=data,
         )
         self.platform_batch_id = response.id
@@ -73,7 +73,7 @@ class AnthropicBatch(Batch):
         if self.platform_batch_id is None:
             raise ValueError("Batch not started")
         
-        response = self.client.beta.messages.batches.retrieve(
+        response = self._client.beta.messages.batches.retrieve(
             self.platform_batch_id
         )
         return anthropic_state_map[response.processing_status]
@@ -84,7 +84,7 @@ class AnthropicBatch(Batch):
         
         file_path = self._create_results_file_path()
         with jsonlines.open(file_path, mode='w') as writer:
-            for result in self.client.beta.messages.batches.results(
+            for result in self._client.beta.messages.batches.results(
                 self.platform_batch_id
             ):
                 writer.write(self._convert_response(result.to_dict()))
@@ -93,7 +93,7 @@ class AnthropicBatch(Batch):
 
     def _get_errors(self):
         # Implement error retrieval logic for Anthropic API
-        batch = self.client.beta.messages.batches.retrieve(self.platform_batch_id)
+        batch = self._client.beta.messages.batches.retrieve(self.platform_batch_id)
         if batch.error:
             return batch.error.message
         else:

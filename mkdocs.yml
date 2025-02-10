@@ -29,6 +29,7 @@ nav:
       - Anthropic: concepts/providers/Anthropic.md
       - Azure OpenAI: concepts/providers/AzureOpenAI.md
       - VertexAI: concepts/providers/VertexAI.md
+      - Bedrock: concepts/providers/Bedrock.md
   - 🛠️ How-to Guides: 
     - howtos/index.md
     - Sample API Service - Stream to Batch pipeline: howtos/batch_dispatcher_service.md
@@ -47,6 +48,9 @@ nav:
         - VertexAIClaudeChatCompletionBatch: references/providers/VertexAI/VertexAIClaudeChatCompletionBatch.md
       - Anthropic:
         - AnthropicChatCompletionBatch: references/providers/Anthropic/AnthropicChatCompletionBatch.md
+      - Bedrock:
+        - BedrockNovaChatCompletionBatch: references/providers/Bedrock/BedrockNovaChatCompletionBatch.md
+        - BedrockClaudeChatCompletionBatch: references/providers/Bedrock/BedrockClaudeChatCompletionBatch.md
     - Pipeline Utils:
       - BatchStorage: references/utils/BatchStorage.md
       - BatchQueue: references/utils/BatchQueue.md
