@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 import time
 from langbatch.schemas import AnthropicChatCompletionRequest
+import json
 
 def convert_content_nova(content: Any) -> List[Dict[str, Any]]:
     if isinstance(content, str):
@@ -98,12 +99,16 @@ def convert_response_message(message):
         content = None
         for item in message['content']:
             if 'toolUse' in item:
+                if isinstance(item['toolUse']['input'], str):
+                    arguments = item['toolUse']['input']
+                else:
+                    arguments = json.dumps(item['toolUse']['input'])
                 tool_calls.append({
                     'type': 'function',
                     'id': item['toolUse']['toolUseId'],
                     'function': {
                         'name': item['toolUse']['name'],
-                        'arguments': item['toolUse']['input']
+                        'arguments': arguments
                     }
                 })
             elif 'text' in item:

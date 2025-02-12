@@ -125,7 +125,7 @@ class BedrockBatch(Batch):
             raise ValueError("Batch not started")
         
         job_id = self.platform_batch_id.split("/")[-1]
-        s3_path = f"{job_id}/input.jsonl.out"
+        s3_path = f"{self.id}/{job_id}/input.jsonl.out"
 
         try:
             self._s3_client.Bucket(self.output_bucket).download_file(s3_path, f"{job_id}_results.jsonl")
@@ -213,6 +213,8 @@ class BedrockClaudeChatCompletionBatch(BedrockBatch, ChatCompletionBatch):
     def _convert_request(self, req: dict):
         custom_id = req["custom_id"]
         request = convert_request(req)
+        request["anthropic_version"] = "bedrock-2023-05-31"
+        del request["model"]
 
         return {"recordId": custom_id, "modelInput": request}
     
@@ -221,8 +223,8 @@ class BedrockClaudeChatCompletionBatch(BedrockBatch, ChatCompletionBatch):
         error = None
 
         output = {
-            "id": f'{response["custom_id"]}',
-            "custom_id": response["custom_id"],
+            "id": f'{response["recordId"]}',
+            "custom_id": response["recordId"],
             "response": res,
             "error": error
         }
