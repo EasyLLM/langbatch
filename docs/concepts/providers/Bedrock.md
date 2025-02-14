@@ -26,7 +26,7 @@ To use Bedrock, you need to setup few things. Please follow these steps:
 - And you need to create a [service role](https://docs.aws.amazon.com/bedrock/latest/userguide/batch-iam-sr.html) using the instructions [here](#create-service-role)
 
 ???+note
-    You need to use the correct region according to the model you are using. Check this [link](https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference-supported.html) for more available regions.
+    You need to use the correct region according to the model you are using. Check this [link](https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference-supported.html) for more available regions. Also, you need to create new S3 buckets for each region.
 
 
 ## Bedrock Nova Batch
@@ -38,7 +38,7 @@ from langbatch.bedrock import BedrockNovaChatCompletionBatch
 
 batch = BedrockNovaChatCompletionBatch(
     file="data.jsonl",
-    model_name="us.amazon.nova-pro-v1:0",
+    model="us.amazon.nova-pro-v1:0",
     input_bucket="batch-input",
     output_bucket="batch-output",
     region="us-east-1",
@@ -59,7 +59,7 @@ from langbatch.bedrock import BedrockClaudeChatCompletionBatch
 
 batch = BedrockClaudeChatCompletionBatch(
     file="data.jsonl",
-    model_name="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+    model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
     input_bucket="batch-input",
     output_bucket="batch-output",
     region="us-west-2",
@@ -119,6 +119,9 @@ batch.start()
 4. In the Add permissions section, Search for the policy you just created in the previous step and Select it. Then, Click on "Next".
 5. Provide the Role Name (For example `BedrockBatchInferenceServiceRole`) and Click on "Create role"
 6. Copy the Role ARN and use it in the Bedrock Batch creation.
+
+???+tip
+    If you are using multiple regions, include the region specific S3 buckets in the policy.
 
 ## User Permissions
 ???+note

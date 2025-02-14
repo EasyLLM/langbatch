@@ -3242,12 +3242,13 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 type = ["pytest-mypy"]
 
 [extras]
-all = ["anthropic", "fastavro", "google-cloud-aiplatform", "google-cloud-bigquery-storage", "redis"]
+all = ["anthropic", "boto3", "fastavro", "google-cloud-aiplatform", "google-cloud-bigquery-storage", "redis"]
 anthropic = ["anthropic"]
+bedrock = ["boto3"]
 redis = ["redis"]
 vertexai = ["fastavro", "google-cloud-aiplatform", "google-cloud-bigquery-storage"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "52f33d257499fa6084ab0130a0cea4681779f92ab15db257517af636166bdb1e"
+content-hash = "97915489a1344657e27769ac7720cab51c653efb119f9e26203a8b9df45c95e0"

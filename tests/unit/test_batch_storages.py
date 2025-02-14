@@ -58,7 +58,7 @@ def test_batch_storage_overwrite_existing_batch(batch_storage: BatchStorage, tes
 
     # Modify metadata and data
     new_meta_data = meta_data.copy()
-    new_meta_data["model_name"] = "gemini-1.5-flash"
+    new_meta_data["model"] = "gemini-2.0-flash-001"
 
     # read the data and append again to the file
     with open(test_data_file, 'r') as f:

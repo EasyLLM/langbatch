@@ -12,10 +12,11 @@ from langbatch.bigquery_utils import (
     read_data_from_bigquery
 )
 from tests.unit.fixtures import test_data_file, temp_dir
+from tests.unit.test_config import config
 
 # Constants for BigQuery interaction
-PROJECT_ID = os.environ["GCP_PROJECT"]
-DATASET_ID = os.environ["BIGQUERY_INPUT_DATASET"]
+PROJECT_ID = config["vertexai"]["GCP_PROJECT"]
+DATASET_ID = config["vertexai"]["BIGQUERY_INPUT_DATASET"]
 TABLE_ID = 'test_table'
 
 @pytest.fixture

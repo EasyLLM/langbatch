@@ -78,7 +78,7 @@ batch_handler = BatchHandler(
     batch_process_func=process_batch,
     batch_type=VertexAIChatCompletionBatch,
     batch_kwargs={
-        "model_name": "gemini-1.5-flash-002",
+        "model": "gemini-2.0-flash-001",
         "project": "my-project",
         "location": "us-central1",
         "bigquery_input_dataset": "input-dataset",

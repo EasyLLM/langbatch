@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 
 import jsonlines
-from openai import OpenAI
+from openai import OpenAI, AzureOpenAI
 from langbatch.Batch import Batch
 from langbatch.schemas import OpenAIChatCompletionRequest, OpenAIEmbeddingRequest
 from langbatch.ChatCompletionBatch import ChatCompletionBatch
@@ -16,7 +16,7 @@ class OpenAIBatch(Batch):
     """
     _url: str = "/v1/chat/completions"
 
-    def __init__(self, file: str, client: OpenAI = OpenAI()) -> None:
+    def __init__(self, file: str, client: OpenAI | AzureOpenAI = OpenAI()) -> None:
         """
         Initialize the OpenAIBatch class.
 

@@ -29,7 +29,7 @@ class BedrockBatch(Batch):
     """
     _url: str = ""
 
-    def __init__(self, file: str, model_name: str, input_bucket: str, output_bucket: str, region: str, service_role: str) -> None:
+    def __init__(self, file: str, model: str, input_bucket: str, output_bucket: str, region: str, service_role: str) -> None:
         """
         Initialize the BedrockBatch class.
 
@@ -40,7 +40,7 @@ class BedrockBatch(Batch):
         ```python
         batch = BedrockChatCompletionBatch(
             "path/to/file.jsonl",
-            "model_name",
+            "model",
             "input_bucket",
             "output_bucket",
             "region"
@@ -51,7 +51,7 @@ class BedrockBatch(Batch):
         self._client = boto3.client(service_name='bedrock', region_name=region)
         self._s3_client = boto3.resource('s3')
 
-        self.model_name = model_name
+        self.model = model
         self.input_bucket = input_bucket
         self.output_bucket = output_bucket
         self.service_role = service_role
@@ -60,7 +60,7 @@ class BedrockBatch(Batch):
     @classmethod
     def _get_init_args(cls, meta_data) -> Dict[str, Any]:
         args = {
-            "model_name": meta_data["model_name"],
+            "model": meta_data["model"],
             "input_bucket": meta_data["input_bucket"],
             "output_bucket": meta_data["output_bucket"],
             "region": meta_data["region"],
@@ -70,7 +70,7 @@ class BedrockBatch(Batch):
     
     def _create_meta_data(self) -> Dict[str, Any]:
         meta_data = {
-            "model_name": self.model_name,
+            "model": self.model,
             "input_bucket": self.input_bucket,
             "output_bucket": self.output_bucket,
             "region": self.region,
@@ -99,7 +99,7 @@ class BedrockBatch(Batch):
         job = self._client.create_model_invocation_job(
             roleArn = self.service_role,
             jobName = self.id,
-            modelId = self.model_name,
+            modelId = self.model,
             inputDataConfig = {"s3InputDataConfig": { "s3Uri":f's3://{self.input_bucket}/{self.id}/'}},
             outputDataConfig = {"s3OutputDataConfig": { "s3Uri":f's3://{self.output_bucket}/{self.id}/'}},
         )
@@ -172,7 +172,7 @@ class BedrockNovaChatCompletionBatch(BedrockBatch, ChatCompletionBatch):
     ```python
     batch = BedrockNovaChatCompletionBatch(
         "path/to/file.jsonl", 
-        "model_name",
+        "model",
         "input_bucket",
         "output_bucket",
         "region",
@@ -188,7 +188,7 @@ class BedrockNovaChatCompletionBatch(BedrockBatch, ChatCompletionBatch):
         return {"recordId": custom_id, "modelInput": request}
     
     def _convert_response(self, response) -> dict:
-        return convert_response_nova(response, self.model_name)
+        return convert_response_nova(response, self.model)
 
     def _validate_request(self, request):
         AnthropicChatCompletionRequest(**request)
@@ -201,7 +201,7 @@ class BedrockClaudeChatCompletionBatch(BedrockBatch, ChatCompletionBatch):
     ```python
     batch = BedrockClaudeChatCompletionBatch(
         "path/to/file.jsonl", 
-        "model_name",
+        "model",
         "input_bucket",
         "output_bucket",
         "region",

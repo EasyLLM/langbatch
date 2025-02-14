@@ -1,40 +1,95 @@
-import os
 from pathlib import Path
 import json
 import time
+import requests
+from subprocess import check_output
 from datetime import datetime
 import pytest
 import jsonlines
 import vertexai
-from google.oauth2 import service_account
 from langbatch.vertexai import VertexAIChatCompletionBatch, VertexAILlamaChatCompletionBatch, VertexAIClaudeChatCompletionBatch
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir
+from tests.unit.test_config import config
 
-GCP_PROJECT = os.environ.get('GCP_PROJECT')
-GCP_LOCATION = os.environ.get('GCP_LOCATION')
-BIGQUERY_INPUT_DATASET = os.environ.get('BIGQUERY_INPUT_DATASET')
-BIGQUERY_OUTPUT_DATASET = os.environ.get('BIGQUERY_OUTPUT_DATASET')
-VERTEX_AI_COMPLETED_BATCH_ID = os.environ.get('VERTEX_AI_COMPLETED_BATCH_ID')
-VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID = os.environ.get('VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID')
+GCP_PROJECT = config["vertexai"]["GCP_PROJECT"]
+GCP_LOCATION = config["vertexai"]["GCP_LOCATION"]
+GCP_LOCATION_CLAUDE = config["vertexai"]["GCP_LOCATION_CLAUDE"]
+GCP_PROJECT_ID = config["vertexai"]["GCP_PROJECT_ID"]
+BIGQUERY_INPUT_DATASET = config["vertexai"]["BIGQUERY_INPUT_DATASET"]
+BIGQUERY_OUTPUT_DATASET = config["vertexai"]["BIGQUERY_OUTPUT_DATASET"]
+BIGQUERY_INPUT_DATASET_CLAUDE = config["vertexai"]["BIGQUERY_INPUT_DATASET_CLAUDE"]
+BIGQUERY_OUTPUT_DATASET_CLAUDE = config["vertexai"]["BIGQUERY_OUTPUT_DATASET_CLAUDE"]
+VERTEX_AI_COMPLETED_BATCH_ID = config["vertexai"]["VERTEX_AI_COMPLETED_BATCH_ID"]
+VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID = config["vertexai"]["VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID"]
+
+model = config["vertexai"]["model"]
+llama_model = config["vertexai"]["llama_model"]
+claude_model = config["vertexai"]["claude_model"]
+
+# run gcloud auth print-access-token to get the token
+token = check_output("gcloud auth print-access-token", shell=True).decode().strip()
+def request_vertexai(data, model= model, provider="google"):
+    location = GCP_LOCATION
+    method = "generateContent"
+    if provider == "anthropic":
+        location = GCP_LOCATION_CLAUDE
+        method = "rawPredict"
+
+    url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{GCP_PROJECT_ID}/locations/{location}/publishers/{provider}/models/{model}:{method}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json; charset=utf-8"
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    return response.json()
+
+def request_llama(data):
+    url = f"https://{GCP_LOCATION}-aiplatform.googleapis.com/v1beta1/projects/{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/endpoints/openapi/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json; charset=utf-8"
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    return response.json()
 
 def setup_module():
-    SERVICE_ACCOUNT_KEY_FILE = os.environ.get('GCP_SERVICE_ACCOUNT_KEY_FILE')
-    credentials = service_account.Credentials.from_service_account_file(filename=SERVICE_ACCOUNT_KEY_FILE)
-    vertexai.init(project=GCP_PROJECT, location=GCP_LOCATION, credentials = credentials)
+    vertexai.init(project=GCP_PROJECT, location=GCP_LOCATION)
 
 @pytest.fixture
 def vertexai_batch(test_data_file: str):
     batch = VertexAIChatCompletionBatch(
         file=test_data_file,
-        model_name="gemini-1.5-flash-002",
+        model=model,
+        gcp_project=GCP_PROJECT,
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET)
+    return batch
+
+@pytest.fixture
+def vertexai_llama_batch(test_data_file: str):
+    batch = VertexAILlamaChatCompletionBatch(
+        file=test_data_file,
+        model=llama_model,
+        gcp_project=GCP_PROJECT,
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET)
+    return batch
+
+@pytest.fixture
+def vertexai_claude_batch(test_data_file: str):
+    batch = VertexAIClaudeChatCompletionBatch(
+        file=test_data_file,
+        model=claude_model,
         gcp_project=GCP_PROJECT,
         bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
         bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET)
     return batch
 
 def test_vertexai_batch_init(vertexai_batch: VertexAIChatCompletionBatch):
-    assert vertexai_batch.model_name == "gemini-1.5-flash-002"
+    assert vertexai_batch.model == model
     assert vertexai_batch.gcp_project == GCP_PROJECT
     assert vertexai_batch.bigquery_input_dataset == BIGQUERY_INPUT_DATASET
     assert vertexai_batch.bigquery_output_dataset == BIGQUERY_OUTPUT_DATASET
@@ -57,14 +112,14 @@ def test_vertexai_batch_create(test_data_file):
             requests.append(req)
     
     batch = VertexAIChatCompletionBatch.create_from_requests(requests, batch_kwargs={
-        "model_name": "gemini-1.5-flash-002",
+        "model": model,
         "gcp_project": GCP_PROJECT,
         "bigquery_input_dataset": BIGQUERY_INPUT_DATASET,
         "bigquery_output_dataset": BIGQUERY_OUTPUT_DATASET
     })
     
     assert isinstance(batch, VertexAIChatCompletionBatch)
-    assert batch.model_name == "gemini-1.5-flash-002"
+    assert batch.model == model
     assert batch.gcp_project == GCP_PROJECT
     assert batch.bigquery_input_dataset == BIGQUERY_INPUT_DATASET
     assert batch.bigquery_output_dataset == BIGQUERY_OUTPUT_DATASET
@@ -88,7 +143,7 @@ def test_vertexai_batch_save_and_load(vertexai_batch: VertexAIChatCompletionBatc
     loaded_batch = VertexAIChatCompletionBatch.load(vertexai_batch.id, storage=storage)
     
     assert loaded_batch.id == vertexai_batch.id
-    assert loaded_batch.model_name == vertexai_batch.model_name
+    assert loaded_batch.model == vertexai_batch.model
     assert loaded_batch.gcp_project == vertexai_batch.gcp_project
     assert loaded_batch.bigquery_input_dataset == vertexai_batch.bigquery_input_dataset
     assert loaded_batch.bigquery_output_dataset == vertexai_batch.bigquery_output_dataset
@@ -113,7 +168,7 @@ def test_vertexai_batch_get_status(vertexai_batch: VertexAIChatCompletionBatch, 
 def test_vertexai_batch_convert_request(test_data_file):
     batch = VertexAIChatCompletionBatch(
         file=test_data_file,
-        model_name="gemini-1.5-flash-002",
+        model=model,
         gcp_project=GCP_PROJECT,
         bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
         bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
@@ -124,7 +179,7 @@ def test_vertexai_batch_convert_request(test_data_file):
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Hello, how are you?"}
         ],
-        "model": "gemini-flash-1.5-002",
+        "model": model,
         "temperature": 0.7,
         "max_tokens": 100,
         "tools": [
@@ -165,10 +220,14 @@ def test_vertexai_batch_convert_request(test_data_file):
     assert converted["generationConfig"]["temperature"] == 0.7
     assert converted["generationConfig"]["maxOutputTokens"] == 100
 
+    for request in batch._get_requests():
+        response = request_vertexai(json.loads(batch._convert_request(request)["request"]), provider="google")
+        assert len(response["candidates"][0]["content"]["parts"]) > 0
+
 def test_vertexai_batch_convert_response(test_data_file):
     batch = VertexAIChatCompletionBatch(
         file=test_data_file,
-        model_name="gemini-1.5-flash-002",
+        model=model,
         gcp_project=GCP_PROJECT,
         bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
         bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
@@ -224,21 +283,37 @@ def test_vertexai_batch_get_results(vertexai_batch: VertexAIChatCompletionBatch,
         assert len(successful_result["choices"]) > 0
         assert successful_result["choices"][0]["message"]["content"] is not None
 
-def test_vertexai_llama_batch_convert_request(test_data_file):
-    batch = VertexAILlamaChatCompletionBatch(
+@pytest.mark.slow
+def test_vertexai_llama_batch_start(vertexai_llama_batch: VertexAILlamaChatCompletionBatch):
+    vertexai_llama_batch.start()
+    assert vertexai_llama_batch.platform_batch_id is not None
+
+    time.sleep(5)
+    assert vertexai_llama_batch.get_status() == "in_progress"
+
+@pytest.mark.slow
+def test_vertexai_claude_batch_start(test_data_file):
+    vertexai.init(project=GCP_PROJECT, location=GCP_LOCATION_CLAUDE)
+    vertexai_claude_batch = VertexAIClaudeChatCompletionBatch(
         file=test_data_file,
-        model_name="llama-3.1-70b-instruct-maas",
+        model=claude_model,
         gcp_project=GCP_PROJECT,
-        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
-        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET_CLAUDE,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET_CLAUDE
     )
-    
+    vertexai_claude_batch.start()
+    assert vertexai_claude_batch.platform_batch_id is not None
+
+    time.sleep(5)
+    assert vertexai_claude_batch.get_status() == "in_progress"
+
+def test_vertexai_llama_batch_convert_request(vertexai_llama_batch: VertexAILlamaChatCompletionBatch):
     body = {
         "messages": [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Hello, how are you?"}
         ],
-        "model": "llama-3.1-70b-instruct-maas",
+        "model": llama_model,
         "temperature": 0.7,
         "max_tokens": 100
     }
@@ -248,22 +323,32 @@ def test_vertexai_llama_batch_convert_request(test_data_file):
         "body": body
     }
 
-    converted = json.loads(batch._convert_request(request)["body"])
+    converted = json.loads(vertexai_llama_batch._convert_request(request)["body"])
     
-    assert converted["model"] == "meta/llama-3.1-70b-instruct-maas"
+    assert converted["model"] == f"meta/{llama_model}"
     assert converted["messages"] == body["messages"]
     assert converted["temperature"] == 0.7
     assert converted["max_tokens"] == 100
 
-def test_vertexai_llama_batch_convert_response(test_data_file):
-    batch = VertexAILlamaChatCompletionBatch(
-        file=test_data_file,
-        model_name="llama-3.1-70b-instruct-maas",
-        gcp_project=GCP_PROJECT,
-        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
-        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
-    )
-    
+    for request in vertexai_llama_batch._get_requests():
+        if request["body"].get("response_format"):
+            continue
+        request = json.loads(vertexai_llama_batch._convert_request(request)["body"])
+        request["model"] = f"meta/{llama_model}"
+        response = request_llama(request)
+
+        success_response = "choices" in response
+        assert success_response
+        if success_response:
+            valid_content = response["choices"][0]["message"].get("content") is not None
+            tool_calls_in_response = "tool_calls" in response["choices"][0]["message"]
+            if tool_calls_in_response:
+                valid_tool_calls = len(response["choices"][0]["message"]["tool_calls"]) > 0
+                assert valid_tool_calls
+            else:
+                assert valid_content
+
+def test_vertexai_llama_batch_convert_response(vertexai_llama_batch: VertexAILlamaChatCompletionBatch):
     response = {
         "id": "test_id",
         "custom_id": "test_id",
@@ -271,7 +356,7 @@ def test_vertexai_llama_batch_convert_response(test_data_file):
             "id": "test_id",
             "object": "chat.completion",
             "created": 1234567890,
-            "model": "llama-3.1-70b-instruct-maas",
+            "model": llama_model,
             "choices": [
                 {
                     "index": 0,
@@ -288,28 +373,20 @@ def test_vertexai_llama_batch_convert_response(test_data_file):
         "error": None
     }
     
-    converted = batch._convert_response(response)
+    converted = vertexai_llama_batch._convert_response(response)
     
     assert converted["id"] == "test_id"
     assert converted["custom_id"] == "test_id"
     assert converted["response"]["body"]["choices"][0]["message"]["content"] == "Hello! How can I help?"
     assert converted["error"] is None
 
-def test_vertexai_claude_batch_convert_request(test_data_file):
-    batch = VertexAIClaudeChatCompletionBatch(
-        file=test_data_file,
-        model_name="claude-3-5-haiku@20241022",
-        gcp_project=GCP_PROJECT,
-        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
-        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
-    )
-    
+def test_vertexai_claude_batch_convert_request(vertexai_claude_batch: VertexAIClaudeChatCompletionBatch):
     body = {
         "messages": [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Hello, how are you?"}
         ],
-        "model": "claude-3-5-haiku@20241022",
+        "model": claude_model,
         "temperature": 0.7,
         "max_tokens": 100,
         "tools": [
@@ -335,7 +412,7 @@ def test_vertexai_claude_batch_convert_request(test_data_file):
         "body": body
     }
 
-    converted = json.loads(batch._convert_request(request)["request"])
+    converted = json.loads(vertexai_claude_batch._convert_request(request)["request"])
     
     assert converted["system"] == "You are a helpful assistant."
     assert len(converted["messages"]) == 1
@@ -348,21 +425,18 @@ def test_vertexai_claude_batch_convert_request(test_data_file):
     assert converted["tools"][0]["name"] == "get_weather"
     assert converted["anthropic_version"] == "vertex-2023-10-16"
 
-def test_vertexai_claude_batch_convert_response(test_data_file):
-    batch = VertexAIClaudeChatCompletionBatch(
-        file=test_data_file,
-        model_name="claude-3-5-haiku@20241022",
-        gcp_project=GCP_PROJECT,
-        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
-        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
-    )
-    
+    for request in vertexai_claude_batch._get_requests():
+        request = json.loads(vertexai_claude_batch._convert_request(request)["request"])
+        response = request_vertexai(request, provider="anthropic", model=claude_model)
+        assert len(response["content"]) > 0
+
+def test_vertexai_claude_batch_convert_response(vertexai_claude_batch: VertexAIClaudeChatCompletionBatch):
     response = {
         "custom_id": "test_id",
         "status": "",
         "response": json.dumps({
             "id": "test_id",
-            "model": "claude-3-5-haiku@20241022",
+            "model": claude_model,
             "stop_reason": "stop",
             "role": "assistant",
             "content": "Hello! How can I help?",
@@ -373,7 +447,7 @@ def test_vertexai_claude_batch_convert_response(test_data_file):
         })
     }
     
-    converted = batch._convert_response(response)
+    converted = vertexai_claude_batch._convert_response(response)
     
     assert converted["id"] == "test_id"
     assert converted["custom_id"] == "test_id"

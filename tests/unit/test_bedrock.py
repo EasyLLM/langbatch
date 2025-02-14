@@ -1,35 +1,50 @@
-# Test cases for Bedrock
-
-import os
 from pathlib import Path
 import json
 import time
 import pytest
 import jsonlines
-from langbatch.bedrock import BedrockClaudeChatCompletionBatch, BedrockNovaChatCompletionBatch
+import boto3
+from langbatch.bedrock import BedrockClaudeChatCompletionBatch, BedrockNovaChatCompletionBatch, BedrockBatch
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir
+from tests.unit.test_config import config
 
-BEDROCK_COMPLETED_PLATFORM_BATCH_ID = os.environ.get('BEDROCK_COMPLETED_PLATFORM_BATCH_ID')
-BEDROCK_COMPLETED_BATCH_ID = os.environ.get('BEDROCK_COMPLETED_BATCH_ID')
+BEDROCK_COMPLETED_PLATFORM_BATCH_ID = config["bedrock"]["BEDROCK_COMPLETED_PLATFORM_BATCH_ID"]
+BEDROCK_COMPLETED_BATCH_ID = config["bedrock"]["BEDROCK_COMPLETED_BATCH_ID"]
 
-service_role = os.environ.get('BEDROCK_SERVICE_ROLE')
-claude_model_name = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
-nova_model_name = "us.amazon.nova-lite-v1:0"
+service_role = config["bedrock"]["BEDROCK_SERVICE_ROLE"]
+claude_model_name = config["bedrock"]["claude_model"]
+nova_model_name = config["bedrock"]["nova_model"]
 
-input_bucket_nova = os.environ.get('S3_INPUT_BUCKET_NOVA')
-output_bucket_nova = os.environ.get('S3_OUTPUT_BUCKET_NOVA')
-region_nova = os.environ.get('AWS_REGION_NOVA')
+input_bucket_nova = config["bedrock"]["S3_INPUT_BUCKET_NOVA"]
+output_bucket_nova = config["bedrock"]["S3_OUTPUT_BUCKET_NOVA"]
+region_nova = config["bedrock"]["AWS_REGION_NOVA"]
 
-input_bucket_claude = os.environ.get('S3_INPUT_BUCKET_CLAUDE')
-output_bucket_claude = os.environ.get('S3_OUTPUT_BUCKET_CLAUDE')
-region_claude = os.environ.get('AWS_REGION_CLAUDE')
+input_bucket_claude = config["bedrock"]["S3_INPUT_BUCKET_CLAUDE"]
+output_bucket_claude = config["bedrock"]["S3_OUTPUT_BUCKET_CLAUDE"]
+region_claude = config["bedrock"]["AWS_REGION_CLAUDE"]
+
+claude_client = boto3.client(service_name='bedrock-runtime', region_name=region_claude)
+nova_client = boto3.client(service_name='bedrock-runtime', region_name=region_nova)
+
+def bedrock_request(model_id, request_body):
+    if model_id == claude_model_name:
+        client = claude_client
+    else:
+        client = nova_client
+    # Invoke the model with the response stream
+    response = client.invoke_model(
+        modelId=model_id, body=json.dumps(request_body)
+    )
+
+    bytes = response.get("body").read()
+    return json.loads(bytes)
 
 @pytest.fixture
 def bedrock_claude_batch(test_data_file: str):
     batch = BedrockClaudeChatCompletionBatch(
         file=test_data_file,
-        model_name=claude_model_name,
+        model=claude_model_name,
         input_bucket=input_bucket_claude,
         output_bucket=output_bucket_claude,
         region=region_claude,
@@ -41,7 +56,7 @@ def bedrock_claude_batch(test_data_file: str):
 def bedrock_nova_batch(test_data_file: str):
     batch = BedrockNovaChatCompletionBatch(
         file=test_data_file,
-        model_name=nova_model_name,
+        model=nova_model_name,
         input_bucket=input_bucket_nova,
         output_bucket=output_bucket_nova,
         region=region_nova,
@@ -52,7 +67,7 @@ def bedrock_nova_batch(test_data_file: str):
 def test_bedrock_batch_init(bedrock_claude_batch: BedrockClaudeChatCompletionBatch):
     # check if the platform_batch_id is None
     assert bedrock_claude_batch.platform_batch_id is None
-    assert bedrock_claude_batch.model_name == "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+    assert bedrock_claude_batch.model == claude_model_name
     assert bedrock_claude_batch.input_bucket == input_bucket_claude
     assert bedrock_claude_batch.output_bucket == output_bucket_claude
     assert bedrock_claude_batch.region == region_claude
@@ -75,7 +90,7 @@ def test_bedrock_batch_create(test_data_file):
     batch = BedrockClaudeChatCompletionBatch.create_from_requests(
         requests,
         batch_kwargs={
-            "model_name": claude_model_name,
+            "model": claude_model_name,
             "input_bucket": input_bucket_claude,
             "output_bucket": output_bucket_claude,
             "region": region_claude,
@@ -83,7 +98,7 @@ def test_bedrock_batch_create(test_data_file):
         }
     )
     assert isinstance(batch, BedrockClaudeChatCompletionBatch)
-    assert batch.model_name == claude_model_name
+    assert batch.model == claude_model_name
     assert batch.input_bucket == input_bucket_claude
     assert batch.output_bucket == output_bucket_claude
     assert batch.region == region_claude
@@ -109,7 +124,7 @@ def test_bedrock_batch_save_and_load(bedrock_claude_batch: BedrockClaudeChatComp
     
     assert loaded_batch.id == bedrock_claude_batch.id    
     assert loaded_batch.platform_batch_id == bedrock_claude_batch.platform_batch_id
-    assert loaded_batch.model_name == bedrock_claude_batch.model_name
+    assert loaded_batch.model == bedrock_claude_batch.model
     assert loaded_batch.input_bucket == bedrock_claude_batch.input_bucket
     assert loaded_batch.output_bucket == bedrock_claude_batch.output_bucket
     assert loaded_batch.region == bedrock_claude_batch.region
@@ -176,6 +191,12 @@ def test_bedrock_claude_batch_convert_request(bedrock_claude_batch: BedrockClaud
     assert len(converted["modelInput"]["tools"]) == 1
     assert converted["modelInput"]["tools"][0]["name"] == "get_weather"
 
+    requests = bedrock_claude_batch._get_requests()
+    for req in requests:
+        converted = bedrock_claude_batch._convert_request(req)
+        response = bedrock_request(claude_model_name, converted["modelInput"])
+        assert len(response["content"]) > 0
+
 def test_bedrock_claude_batch_convert_response(bedrock_claude_batch: BedrockClaudeChatCompletionBatch):
     content = [
         {
@@ -226,7 +247,7 @@ def test_bedrock_claude_batch_convert_response(bedrock_claude_batch: BedrockClau
     assert converted["response"]["body"]["choices"][0]["message"]["content"] == content[0]
     assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["id"] == content[1]["id"]
     assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["function"]["name"] == content[1]["name"]
-    assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"] == content[1]["input"]
+    assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"] == json.dumps(content[1]["input"])
 
 def test_bedrock_nova_batch_convert_request(bedrock_nova_batch: BedrockNovaChatCompletionBatch):
     request = {
@@ -266,6 +287,14 @@ def test_bedrock_nova_batch_convert_request(bedrock_nova_batch: BedrockNovaChatC
     assert "temperature" in converted["modelInput"]["inferenceConfig"]
     assert "max_new_tokens" in converted["modelInput"]["inferenceConfig"]
     assert "toolConfig" in converted["modelInput"]
+
+    requests = bedrock_nova_batch._get_requests()
+    for req in requests:
+        converted = bedrock_nova_batch._convert_request(req)
+        print(converted)
+        response = bedrock_request(nova_model_name, converted["modelInput"])
+        print(response)
+        assert len(response['output']['message']['content']) > 0
 
 def test_bedrock_nova_batch_convert_response(bedrock_nova_batch: BedrockNovaChatCompletionBatch):
     response = {
@@ -340,12 +369,22 @@ def test_bedrock_nova_batch_convert_response(bedrock_nova_batch: BedrockNovaChat
     assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"] == json.dumps(response["modelOutput"]["output"]["message"]["content"][1]["toolUse"]["input"])
 
 @pytest.mark.slow
-def test_bedrock_batch_start(bedrock_claude_batch: BedrockClaudeChatCompletionBatch):
+@pytest.mark.parametrize("test_data_file", ["chat_completion_batch_bedrock.jsonl"], indirect=True)
+def test_bedrock_claude_batch_start(bedrock_claude_batch: BedrockClaudeChatCompletionBatch):
     bedrock_claude_batch.start()
     assert bedrock_claude_batch.platform_batch_id is not None
 
     time.sleep(5)
     assert bedrock_claude_batch.get_status() == "in_progress"
+
+@pytest.mark.slow
+@pytest.mark.parametrize("test_data_file", ["chat_completion_batch_bedrock.jsonl"], indirect=True)
+def test_bedrock_nova_batch_start(bedrock_nova_batch: BedrockNovaChatCompletionBatch):
+    bedrock_nova_batch.start()
+    assert bedrock_nova_batch.platform_batch_id is not None
+
+    time.sleep(5)
+    assert bedrock_nova_batch.get_status() == "in_progress"
 
 def test_bedrock_batch_get_results(bedrock_claude_batch: BedrockClaudeChatCompletionBatch, monkeypatch):
     monkeypatch.setattr(bedrock_claude_batch, 'platform_batch_id', BEDROCK_COMPLETED_PLATFORM_BATCH_ID)

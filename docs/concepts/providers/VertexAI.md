@@ -49,7 +49,7 @@ from langbatch.vertexai import VertexAIChatCompletionBatch
 
 batch = VertexAIChatCompletionBatch(
     file="data.jsonl",
-    model_name="gemini-1.5-flash-002",
+    model="gemini-2.0-flash-001",
     project=GCP_PROJECT,
     location=GCP_LOCATION,
     bigquery_input_dataset="batches",
@@ -81,7 +81,7 @@ from langbatch.vertexai import VertexAIClaudeChatCompletionBatch
 
 batch = VertexAIClaudeChatCompletionBatch(
     file="data.jsonl",
-    model_name="claude-3-5-sonnet-v2@20241022",
+    model="claude-3-5-sonnet-v2@20241022",
     project=GCP_PROJECT,
     location='us-east5',
     bigquery_input_dataset="batches",
@@ -103,7 +103,7 @@ from langbatch.vertexai import VertexAILlamaChatCompletionBatch
 
 batch = VertexAILlamaChatCompletionBatch(
     file="data.jsonl",
-    model_name="llama-3.1-405b-instruct-maas",
+    model="llama-3.1-405b-instruct-maas",
     project=GCP_PROJECT,
     location=GCP_LOCATION,
     bigquery_input_dataset="batches",

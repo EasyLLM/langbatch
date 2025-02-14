@@ -2,38 +2,57 @@ from typing import Any, Dict, List, Optional
 from langbatch.utils import get_web_image
 from langbatch.schemas import AnthropicChatCompletionRequest
 import time
+import json
 
 def convert_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     converted_messages = []
+
+    tool_responses = {}
+    # First pass - collect tool responses
+    for message in messages:
+        if message["role"] == "tool":
+            converted_part = {
+                "type": "tool_result",
+                "tool_use_id": message["tool_call_id"],
+                "content": message["content"]
+            }
+            tool_responses[message["tool_call_id"]] = converted_part
+
     for message in messages:
         if message["role"] == "assistant" and message["tool_calls"]:
             converted_tool_calls = []
+            tool_call_ids = []
             for tool_call in message["tool_calls"]:
                 converted_tool_call = {
                     "type": "tool_use",
                     "id": tool_call["id"],
                     "name": tool_call["function"]["name"],
-                    "input": tool_call["function"]["arguments"]
+                    "input": json.loads(tool_call["function"]["arguments"])
                 }
                 converted_tool_calls.append(converted_tool_call)
-            converted_message = {"role": "assistant", "content": [converted_tool_call]}
-        elif message["role"] == "tool":
+                tool_call_ids.append(tool_call["id"])
+            converted_message = {"role": "assistant", "content": converted_tool_calls}
+            converted_messages.append(converted_message)
+
+            tool_responses_parts = []
+            for tool_call_id in tool_call_ids:
+                if tool_call_id in tool_responses:
+                    tool_responses_parts.append(tool_responses[tool_call_id])
+            
             converted_message = {
                 "role": "user",
-                "content": [
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": message["tool_call_id"],
-                        "content": message["content"]
-                    }
-                ]
+                "content": tool_responses_parts
             }
+            converted_messages.append(converted_message)
+        elif message["role"] == "tool":
+            # We are handling tools in the first pass
+            pass
         else:
             converted_message = {
                 "role": message["role"],
                 "content": convert_content(message["content"])
             }
-        converted_messages.append(converted_message)
+            converted_messages.append(converted_message)
     return converted_messages
 
 def convert_content(content: Any) -> List[Dict[str, Any]]:
@@ -166,7 +185,7 @@ def convert_response_message(message):
                     'id': item['id'],
                     'function': {
                         'name': item['name'],
-                        'arguments': item['input']
+                        'arguments': json.dumps(item['input'])
                     }
                 })
             else:

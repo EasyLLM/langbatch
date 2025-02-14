@@ -20,6 +20,59 @@ def convert_content_nova(content: Any) -> List[Dict[str, Any]]:
         return converted_content
     return []
 
+def convert_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    tool_responses = {}
+    # First pass for getting tool results
+    for message in messages:
+        if message["role"] == "tool":
+            converted_part = {
+                "toolResult": {
+                    "toolUseId": message["tool_call_id"],
+                    "content": [{"json": json.loads(message["content"])}]
+                }
+            }
+            tool_responses[message["tool_call_id"]] = converted_part
+    
+    converted_messages = []
+    for message in messages:
+        if message["role"] == "assistant" and message.get("tool_calls"):
+            converted_tool_calls = []
+            tool_call_ids = []
+            for tool_call in message["tool_calls"]:
+                converted_tool_call = {
+                    "toolUse": {
+                        "toolUseId": tool_call["id"],
+                        "name": tool_call["function"]["name"],
+                        "input": json.loads(tool_call["function"]["arguments"])
+                    }
+                }
+                converted_tool_calls.append(converted_tool_call)
+                tool_call_ids.append(tool_call["id"])
+            
+            converted_messages.append({
+                "role": "assistant",
+                "content": converted_tool_calls
+            })
+
+            # Add tool results
+            tool_results = []
+            for tool_call_id in tool_call_ids:
+                if tool_call_id in tool_responses:
+                    tool_results.append(tool_responses[tool_call_id])
+            converted_messages.append({
+                "role": "user",
+                "content": tool_results
+            })
+        elif message["role"] == "tool":
+            # We are handling tools in the first pass
+            pass
+        else:
+            converted_messages.append({
+                "role": message["role"],
+                "content": convert_content_nova(message["content"])
+            })
+    return converted_messages
+                
 def convert_tools_nova(tools: Optional[List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
     if not tools:
         return None
@@ -54,13 +107,10 @@ def convert_request_nova(req: dict) -> dict:
         if message["role"] == "system":
             system_content = convert_content_nova(message["content"])
         else:
-            messages.append({
-                "role": message["role"],
-                "content": convert_content_nova(message["content"])
-            })
+            messages.append(message)
     
     req = {
-        "messages": messages
+        "messages": convert_messages(messages)
     }
     
     if system_content:
