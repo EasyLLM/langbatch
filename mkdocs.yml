@@ -1,5 +1,5 @@
 site_name: LangBatch
-site_url: https://langbatch.genmodels.exchange
+site_url: https://www.langbatch.com
 repo_name: EasyLLM/langbatch
 repo_url: https://github.com/EasyLLM/langbatch
 watch:
@@ -8,10 +8,16 @@ watch:
 # Navigation
 nav:
   - "": index.md
-  - 🚀 Get Started: 
-    - getstarted/index.md
+  - 🚀 Get Started:
     - Installation: getstarted/install.md
-    - Running a Batch: getstarted/batch.md
+    - Quickstart: getstarted/batch.md
+    - Providers: 
+      - concepts/providers/index.md
+      - OpenAI: concepts/providers/OpenAI.md
+      - Anthropic: concepts/providers/Anthropic.md
+      - Azure OpenAI: concepts/providers/AzureOpenAI.md
+      - VertexAI: concepts/providers/VertexAI.md
+      - Bedrock: concepts/providers/Bedrock.md
   - 📚 Core Concepts: 
     - concepts/index.md
     - Batch Types: 
@@ -23,13 +29,6 @@ nav:
       - concepts/pipeline/index.md
       - Batch Handler: concepts/pipeline/batch_handler.md
       - Batch Dispatcher: concepts/pipeline/batch_dispatcher.md
-    - Providers: 
-      - concepts/providers/index.md
-      - OpenAI: concepts/providers/OpenAI.md
-      - Anthropic: concepts/providers/Anthropic.md
-      - Azure OpenAI: concepts/providers/AzureOpenAI.md
-      - VertexAI: concepts/providers/VertexAI.md
-      - Bedrock: concepts/providers/Bedrock.md
   - 🛠️ How-to Guides: 
     - howtos/index.md
     - Sample API Service - Stream to Batch pipeline: howtos/batch_dispatcher_service.md
@@ -38,6 +37,12 @@ nav:
     - Batch: references/Batch.md
     - ChatCompletionBatch: references/ChatCompletion.md
     - EmbeddingBatch: references/Embedding.md
+    - Pipeline Utils:
+      - BatchStorage: references/utils/BatchStorage.md
+      - BatchQueue: references/utils/BatchQueue.md
+      - BatchHandler: references/utils/BatchHandler.md
+      - RequestQueue: references/utils/RequestQueue.md
+      - BatchDispatcher: references/utils/BatchDispatcher.md
     - Providers:
       - OpenAI: 
         - OpenAIChatCompletionBatch: references/providers/OpenAI/OpenAIChatCompletionBatch.md
@@ -51,12 +56,6 @@ nav:
       - Bedrock:
         - BedrockNovaChatCompletionBatch: references/providers/Bedrock/BedrockNovaChatCompletionBatch.md
         - BedrockClaudeChatCompletionBatch: references/providers/Bedrock/BedrockClaudeChatCompletionBatch.md
-    - Pipeline Utils:
-      - BatchStorage: references/utils/BatchStorage.md
-      - BatchQueue: references/utils/BatchQueue.md
-      - BatchHandler: references/utils/BatchHandler.md
-      - RequestQueue: references/utils/RequestQueue.md
-      - BatchDispatcher: references/utils/BatchDispatcher.md
   - ❤️ Community: community/index.md
 
 # Material-Docs Theme
@@ -69,7 +68,6 @@ theme:
     accent: white
   features:
     - content.tabs.link
-    - content.action.view
     - content.code.annotate
     - content.code.copy
     - announce.dismiss

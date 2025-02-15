@@ -116,12 +116,12 @@ batch.save()
 
 # Save Batch to Custom Storage
 storage = CustomStorage()
-batch = OpenAIChatCompletionBatch("data.jsonl", storage=storage)
-batch.save()
+batch = OpenAIChatCompletionBatch("data.jsonl")
+batch.save(storage=storage)
 ```
 
 !!! info
-    By default, File based storage will be used to save the batch. You can also pass a custom storage instance when initializing the batch.
+    By default, File based storage will be used to save the batch. You can also pass a custom storage instance when initializing the batch. For example, you can save the batch to a cloud storage.
 
 ## Load Batch
 

@@ -1,14 +1,6 @@
 # Embedding Batch
 
-`EmbeddingBatch` is the abstract batch class for processing embedding requests. It utilizes the OpenAI Embedding API format as its standard request structure.
-
-1. **Universal Compatibility**: While based on the OpenAI format, `EmbeddingBatch` can be used with embedding models from various providers, not just OpenAI.
-
-2. **Extensibility**: Serves as a base class for creating specialized embedding batch classes.
-
-3. **Standardized Input/Output**: Uses OpenAI Batch File format and the OpenAI Embedding API format for input. Results are also consistently provided in the OpenAI format.
-
-By standardizing on the OpenAI format, `EmbeddingBatch` ensures consistency and interoperability across different embedding implementations within the LangBatch ecosystem.
+`EmbeddingBatch` is the abstract batch class for processing embedding requests. Same as `ChatCompletionBatch`, it uses the OpenAI Batch File format for requests and responses.
 
 ## Initialize an Embedding Batch
 
@@ -37,8 +29,11 @@ batch = OpenAIEmbeddingBatch.create([
 
 ## Get Results
 
+In EmbeddingBatch, the successful results contain `embedding` and `custom_id` keys.
+
 ```python
 successful_results, unsuccessful_results = batch.get_results()
 for result in successful_results:
+    print(f"Custom ID: {result['custom_id']}")
     print(result["embedding"])
 ```

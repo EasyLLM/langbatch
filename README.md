@@ -3,7 +3,7 @@
   src="./docs/_static/imgs/langbatch-logo.png">
 </h1>
 <p align="center">
-  <i>Call all Batch APIs using the OpenAI format [OpenAI, Anthropic, Azure OpenAI, Vertex AI]</i>
+  <i>Call all Batch APIs using the OpenAI format [OpenAI, Anthropic, Azure OpenAI, Vertex AI, Bedrock]</i>
 </p>
 
 <p align="center">
@@ -19,19 +19,19 @@
     <a href="https://pypi.org/project/langbatch/">
         <img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/langbatch">
     </a>
-    <a href="https://discord.gg/7FS87Rfb">
-        <img alt="discord-invite" src="https://dcbadge.vercel.app/api/server/7FS87Rfb?style=flat">
+    <a href="https://discord.gg/uh7PZ2XT">
+        <img alt="discord-invite" src="https://dcbadge.vercel.app/api/server/uh7PZ2XT?style=flat">
     </a>
 </p>
 
 <h4 align="center">
     <p>
-        <a href="https://langbatch.genmodels.exchange/">Documentation</a> |
-        <a href="https://discord.gg/7FS87Rfb">Join Discord</a> 
+        <a href="https://www.langbatch.com/">Documentation</a> |
+        <a href="https://discord.gg/uh7PZ2XT">Join Discord</a> 
     <p>
 </h4>
 
-LangBatch is a Python library for large scale AI generation using batch APIs from providers like OpenAI, Azure OpenAI, GCP Vertex AI, etc.  
+LangBatch is a unified API for accessing Batch APIs from providers like OpenAI, Anthropic, Azure OpenAI, Vertex AI, Bedrock, etc.  
 
 ## Utlize Batch APIs for
 
@@ -42,10 +42,9 @@ LangBatch is a Python library for large scale AI generation using batch APIs fro
 
 ## Key Features
 
-- Unified API to access Batch APIs from different providers.
-- Standarized OpenAI format for requests and responses
-- Utilities for handling the complete lifecycle of a batch job: Creating, Starting, Monitoring, Retrying and Processing Completed
-- Convert incoming requests into batch jobs
+- OpenAI format for requests and responses
+- Utilities for handling the complete lifecycle of a batch job: Creating, Starting, Monitoring, Retrying and Processing
+- Pipeline to convert stream of incoming requests into batch jobs
 
 ## Installation
 
@@ -61,14 +60,14 @@ Alternatively, from source:
 pip install git+https://github.com/EasyLLM/langbatch
 ```
 
-Find the complete [Installation](https://langbatch.genmodels.exchange/installation/) guide here.
+Find the complete [Installation](https://www.langbatch.com/installation/) guide here.
 
 ### Quickstart
 
 Here is the 3 main lines to start a batch job:
 ```python
-from langbatch import OpenAIChatCompletionBatch
-batch = OpenAIChatCompletionBatch("openai_chat_completion_requests.jsonl")
+from langbatch import chat_completion_batch
+batch = chat_completion_batch("openai_chat_completion_requests.jsonl", provider="openai")
 batch.start()
 ```
 
@@ -81,11 +80,11 @@ if batch.get_status() == "completed":
         print(f"Content: {result['choices'][0]['message']['content']}")
 ```
 
-Find the complete [Get Started](https://langbatch.genmodels.exchange/getstarted/batch/) guide here.
+Find the complete [Get Started](https://www.langbatch.com/getstarted/batch/) guide here.
 
 ## 🫂 Community
 
-If you want to get more involved with LangBatch, check out our [discord server](https://discord.gg/7FS87Rfb)
+If you want to get more involved with LangBatch, check out our [discord server](https://discord.gg/uh7PZ2XT)
 
 ## Contributors
 

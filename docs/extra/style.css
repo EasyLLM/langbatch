@@ -38,14 +38,14 @@ h1 {
   background: none !important;
 }
 .md-nav__link--active {
-  color: rgb(255, 200, 0) !important;
+  color: rgb(3, 211, 248) !important;
 }
 .md-header {
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: rgb(21, 20, 20) !important;
   color: white !important;
   backdrop-filter: blur(100px) !important;
   -webkit-backdrop-filter: blur(100px) !important;
-  width: 70% !important;
+  width: 75% !important;
   margin: auto !important;
   border-radius: 10px !important;
 }
