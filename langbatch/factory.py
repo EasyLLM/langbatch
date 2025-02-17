@@ -1,16 +1,8 @@
 import os
-
-from anthropic import Anthropic
 from openai import OpenAI, AzureOpenAI
 
 from langbatch.errors import SetupError
-from langbatch.anthropic import AnthropicChatCompletionBatch
-from langbatch.bedrock import BedrockClaudeChatCompletionBatch
-from langbatch.bedrock import BedrockNovaChatCompletionBatch
 from langbatch.openai import OpenAIChatCompletionBatch, OpenAIEmbeddingBatch
-from langbatch.vertexai import VertexAIChatCompletionBatch
-from langbatch.vertexai import VertexAIClaudeChatCompletionBatch
-from langbatch.vertexai import VertexAILlamaChatCompletionBatch
 
 def get_args(required_args: dict, kwargs: dict):
     extracted_args = {}
@@ -29,6 +21,12 @@ def get_args(required_args: dict, kwargs: dict):
 
 def chat_completion_batch(file: str, provider: str, model: str = None, **kwargs):
     if provider == "anthropic":
+        try:
+            from anthropic import Anthropic
+            from langbatch.anthropic import AnthropicChatCompletionBatch
+        except ImportError:
+            raise SetupError("Anthropic dependencies not installed. Install with 'pip install langbatch[Anthropic]'")
+
         if len(kwargs) == 0 or "client" not in kwargs:
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if api_key:
@@ -69,6 +67,15 @@ def chat_completion_batch(file: str, provider: str, model: str = None, **kwargs)
             azure_client = AzureOpenAI(**extracted_args)
             return OpenAIChatCompletionBatch(file, azure_client)
     elif provider == "vertex_ai":
+        try:
+            from langbatch.vertexai import (
+                VertexAIChatCompletionBatch,
+                VertexAIClaudeChatCompletionBatch,
+                VertexAILlamaChatCompletionBatch,
+            )
+        except ImportError:
+            raise SetupError("VertexAI dependencies not installed. Install with 'pip install langbatch[VertexAI]'")
+
         required_args = {
             "GCP_PROJECT":"gcp_project", 
             "GCP_BIGQUERY_INPUT_DATASET":"bigquery_input_dataset", 
@@ -90,6 +97,14 @@ def chat_completion_batch(file: str, provider: str, model: str = None, **kwargs)
             else:
                 raise SetupError("model is required for VertexAI")
     elif provider == "bedrock":
+        try:
+            from langbatch.bedrock import (
+                BedrockClaudeChatCompletionBatch,
+                BedrockNovaChatCompletionBatch,
+            )
+        except ImportError:
+            raise SetupError("Bedrock dependencies not installed. Install with 'pip install langbatch[Bedrock]'")
+
         required_args = {
             "AWS_INPUT_BUCKET":"input_bucket",
             "AWS_OUTPUT_BUCKET":"output_bucket",
