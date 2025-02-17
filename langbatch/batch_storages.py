@@ -1,11 +1,19 @@
 import json
+import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Any, Tuple
-import shutil
+import pickle
 from langbatch.utils import get_data_path
 
 DATA_PATH = get_data_path()
+
+def _is_json_serializable(obj: Any) -> bool:
+    try:
+        json.dumps(obj)
+        return True
+    except (TypeError, OverflowError, ValueError):
+        return False
 
 class BatchStorage(ABC):
     """
@@ -65,6 +73,9 @@ class BatchStorage(ABC):
 class FileBatchStorage(BatchStorage):
     """
     Batch storage that saves the batch data and metadata to the file system.
+    Automatically chooses between JSON and pickle serialization based on content:
+    - Uses JSON for simple metadata (human-readable, portable)
+    - Uses pickle for complex objects (like API clients)
 
     Usage:
     ```python
@@ -90,8 +101,22 @@ class FileBatchStorage(BatchStorage):
         self.saved_batches_directory.mkdir(exist_ok=True, parents=True)
 
     def save(self, id: str, data_file: Path, meta_data: Dict[str, Any]):
-        with open(self.saved_batches_directory / f"{id}.json", 'w') as f:
-            json.dump(meta_data, f)
+        # Check if metadata can be JSON serialized
+        use_json = _is_json_serializable(meta_data)
+        json_meta_file = self.saved_batches_directory / f"{id}.json"
+        pkl_meta_file = self.saved_batches_directory / f"{id}.pkl"
+        if use_json:
+            with open(json_meta_file, 'w') as f:
+                json.dump(meta_data, f)
+
+            if pkl_meta_file.exists():
+                pkl_meta_file.unlink(missing_ok=True)
+        else:
+            with open(pkl_meta_file, 'wb') as f:
+                pickle.dump(meta_data, f)
+
+            if json_meta_file.exists():
+                json_meta_file.unlink(missing_ok=True)
 
         destination = self.saved_batches_directory / f"{id}.jsonl"
         if not destination.exists(): 
@@ -100,9 +125,19 @@ class FileBatchStorage(BatchStorage):
 
     def load(self, id: str) -> Tuple[Path, Path]:
         data_file = self.saved_batches_directory / f"{id}.jsonl"
+        
+        # Try JSON first, then pickle
         json_file = self.saved_batches_directory / f"{id}.json"
+        pkl_file = self.saved_batches_directory / f"{id}.pkl"
+        
+        if json_file.is_file():
+            meta_file = json_file
+        elif pkl_file.is_file():
+            meta_file = pkl_file
+        else:
+            raise ValueError(f"Batch with id {id} not found")
 
-        if not data_file.is_file() or not json_file.is_file():
+        if not data_file.is_file():
             raise ValueError(f"Batch with id {id} not found")
         
-        return data_file, json_file
+        return data_file, meta_file

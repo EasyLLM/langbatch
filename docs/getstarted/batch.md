@@ -43,3 +43,12 @@ if batch.get_status() == "completed":
 
 ???+ tip
     Learn more about the batch actions in the [Batch](../concepts/types/batch.md) page.
+
+## Data Path
+
+By default, LangBatch will save the batch related files in the `langbatch_data` directory in the current working directory. You can change this by setting the `LANGBATCH_DATA_PATH` environment variable.
+
+```python
+import os
+os.environ["LANGBATCH_DATA_PATH"] = "/path/to/your/data"
+```

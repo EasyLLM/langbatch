@@ -30,7 +30,7 @@ LangBatch is a unified API for accessing Batch APIs from providers like OpenAI, 
 
     Learn the basics and become familiar with the LangBatch and how to utilize it.
 
-    [:octicons-arrow-right-24: Get Started](getstarted/index.md)
+    [:octicons-arrow-right-24: Get Started](getstarted/install.md)
 
 - 📚 **Core Concepts**
 
@@ -50,6 +50,6 @@ LangBatch is a unified API for accessing Batch APIs from providers like OpenAI, 
 
     Technical descriptions of how LangBatch classes and methods work.
 
-    [:octicons-arrow-right-24: References](references/index.md)
+    [:octicons-arrow-right-24: References](references/Batch.md)
 
 </div>
