@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import jsonlines
 from anthropic import Anthropic
 from anthropic.types.beta.message_create_params import MessageCreateParamsNonStreaming
@@ -25,7 +25,7 @@ class AnthropicBatch(Batch):
     """
     _url: str = "https://api.anthropic.com/v1/messages/batches"
 
-    def __init__(self, file: str, client: Anthropic = Anthropic()) -> None:
+    def __init__(self, file: str, client: Optional[Anthropic] = None) -> None:
         """
         Initialize the AnthropicBatch class.
 
@@ -41,7 +41,7 @@ class AnthropicBatch(Batch):
         ```
         """
         super().__init__(file)
-        self._client = client
+        self._client = client or Anthropic()
     
     def _create_meta_data(self) -> Dict[str, Any]:
         return {}

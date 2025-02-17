@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import tempfile
 from pathlib import Path
 
@@ -16,7 +16,7 @@ class OpenAIBatch(Batch):
     """
     _url: str = "/v1/chat/completions"
 
-    def __init__(self, file: str, client: OpenAI | AzureOpenAI = OpenAI()) -> None:
+    def __init__(self, file: str, client: Optional[OpenAI | AzureOpenAI] = None) -> None:
         """
         Initialize the OpenAIBatch class.
 
@@ -37,7 +37,7 @@ class OpenAIBatch(Batch):
         ```
         """
         super().__init__(file)
-        self._client = client
+        self._client = client or OpenAI()
 
     @classmethod
     def _get_init_args(cls, meta_data) -> Dict[str, Any]:
