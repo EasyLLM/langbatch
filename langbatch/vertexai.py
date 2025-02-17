@@ -9,7 +9,7 @@ from vertexai.preview.batch_prediction import BatchPredictionJob
 from langbatch.Batch import Batch
 from langbatch.ChatCompletionBatch import ChatCompletionBatch
 from langbatch.bigquery_utils import write_data_to_bigquery, read_data_from_bigquery, create_table
-from langbatch.schemas import VertexAIChatCompletionRequest, OpenAIChatCompletionRequest, AnthropicChatCompletionRequest
+from langbatch.schemas import VertexAIChatCompletionRequest, VertexAILlamaChatCompletionRequest, AnthropicChatCompletionRequest
 from langbatch.claude_utils import convert_request, convert_message
 
 vertexai_state_map = {
@@ -350,34 +350,30 @@ class VertexAIChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
                     "logprobs": None,
                     "finish_reason": candidate["finishReason"].lower()
                 }
-                if candidate.get("function_calls", None):
-                    tool_calls = []
-                    for function_call in candidate["function_calls"]:
+
+                tool_calls = []
+                text_part = None
+                for part in candidate["content"]["parts"]:
+                    if part.get("functionCall", None):
                         tool_call = {
                             "type": "function",
                             "function": {
-                                "name": function_call.get("name"),
-                                "arguments": function_call.get("arguments", "{}")
+                                "name": part["functionCall"].get("name"),
+                                "arguments": json.dumps(part["functionCall"].get("args", {}))
                             }
                         }
                         tool_calls.append(tool_call)
-                    message = {
-                        "role": "tool",
-                        "content": "",
-                        "tool_calls": tool_calls
-                    }
-                else:
-                    try:
-                        content = candidate["content"]["parts"][0]["text"]
-                        message = {
-                            "role": "assistant",
-                            "content": content
-                        }
-                    except KeyError:
-                        message = {"role": "assistant", "content": ""}
+                    else:
+                        text_part = part["text"]
+                
+                message = {
+                    "role": "assistant",
+                    "content": text_part
+                }
+                if len(tool_calls) > 0:
+                    message["tool_calls"] = tool_calls
 
                 choice["message"] = message
-                
                 choices.append(choice)
 
             usage = {
@@ -474,7 +470,7 @@ class VertexAILlamaChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
     _field_name: str = "body"
 
     def _convert_request(self, req: dict) -> str:
-        request = OpenAIChatCompletionRequest(**req["body"])
+        request = VertexAILlamaChatCompletionRequest(**req["body"])
 
         request.model = f"meta/{self.model}"
 
@@ -501,4 +497,4 @@ class VertexAILlamaChatCompletionBatch(VertexAIBatch, ChatCompletionBatch):
         return output
 
     def _validate_request(self, request):
-        OpenAIChatCompletionRequest(**request)
+        VertexAILlamaChatCompletionRequest(**request)

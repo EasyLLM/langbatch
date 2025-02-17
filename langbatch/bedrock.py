@@ -1,4 +1,5 @@
 from typing import Any, Dict
+from pathlib import Path
 import jsonlines
 import boto3
 import botocore
@@ -86,13 +87,16 @@ class BedrockBatch(Batch):
     def _upload_batch_file(self):
         data = self._prepare_data()
 
-        with jsonlines.open('prepared_data.jsonl', mode='w') as writer:
+        file_path = Path(f"{self.id}_prepared_data.jsonl")
+        with jsonlines.open(file_path, mode='w') as writer:
             writer.write_all(data)
 
         self._s3_client.Bucket(self.input_bucket).upload_file(
-            'prepared_data.jsonl',
+            str(file_path),
             f'{self.id}/input.jsonl'
         )
+
+        file_path.unlink(missing_ok=True)
     
     def _create_batch(self):
         self._upload_batch_file()
@@ -135,9 +139,11 @@ class BedrockBatch(Batch):
             raise ValueError("Failed to download results file from S3")
         
         data = []
-        with jsonlines.open(f"{job_id}_results.jsonl", mode='r') as reader:
+        file_path = Path(f"{job_id}_results.jsonl")
+        with jsonlines.open(file_path, mode='r') as reader:
             for line in reader:
                 data.append(line)
+        file_path.unlink(missing_ok=True)
 
         file_path = self._create_results_file_path()
         with jsonlines.open(file_path, mode='w') as writer:

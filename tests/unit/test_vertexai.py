@@ -22,6 +22,10 @@ BIGQUERY_INPUT_DATASET_CLAUDE = config["vertexai"]["BIGQUERY_INPUT_DATASET_CLAUD
 BIGQUERY_OUTPUT_DATASET_CLAUDE = config["vertexai"]["BIGQUERY_OUTPUT_DATASET_CLAUDE"]
 VERTEX_AI_COMPLETED_BATCH_ID = config["vertexai"]["VERTEX_AI_COMPLETED_BATCH_ID"]
 VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID = config["vertexai"]["VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID"]
+VERTEX_AI_COMPLETED_BATCH_ID_CLAUDE = config["vertexai"]["VERTEX_AI_COMPLETED_BATCH_ID_CLAUDE"]
+VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID_CLAUDE = config["vertexai"]["VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID_CLAUDE"]
+VERTEX_AI_COMPLETED_BATCH_ID_LLAMA = config["vertexai"]["VERTEX_AI_COMPLETED_BATCH_ID_LLAMA"]
+VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID_LLAMA = config["vertexai"]["VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID_LLAMA"]
 
 model = config["vertexai"]["model"]
 llama_model = config["vertexai"]["llama_model"]
@@ -84,8 +88,8 @@ def vertexai_claude_batch(test_data_file: str):
         file=test_data_file,
         model=claude_model,
         gcp_project=GCP_PROJECT,
-        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
-        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET)
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET_CLAUDE,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET_CLAUDE)
     return batch
 
 def test_vertexai_batch_init(vertexai_batch: VertexAIChatCompletionBatch):
@@ -281,10 +285,64 @@ def test_vertexai_batch_get_results(vertexai_batch: VertexAIChatCompletionBatch,
         assert successful_result["custom_id"] is not None
         assert successful_result["choices"] is not None
         assert len(successful_result["choices"]) > 0
-        assert successful_result["choices"][0]["message"]["content"] is not None
+        valid_content = successful_result["choices"][0]["message"]["content"] is not None
+        tool_calls_in_response = "tool_calls" in successful_result["choices"][0]["message"]
+        if tool_calls_in_response:
+            valid_tool_calls = len(successful_result["choices"][0]["message"]["tool_calls"]) > 0
+            assert valid_tool_calls
+        else:
+            assert valid_content
+
+def test_vertexai_llama_batch_get_results(vertexai_llama_batch: VertexAILlamaChatCompletionBatch, monkeypatch):
+    monkeypatch.setattr(vertexai_llama_batch, 'id', VERTEX_AI_COMPLETED_BATCH_ID_LLAMA)
+    successful_results, unsuccessful_results = vertexai_llama_batch.get_results()
+    
+    assert len(successful_results) > 0
+    assert len(unsuccessful_results) == 0
+
+    for successful_result in successful_results:
+        assert successful_result["custom_id"] is not None
+        assert successful_result["choices"] is not None
+        assert len(successful_result["choices"]) > 0
+        valid_content = successful_result["choices"][0]["message"].get("content") is not None
+        tool_calls_in_response = "tool_calls" in successful_result["choices"][0]["message"]
+        if tool_calls_in_response:
+            valid_tool_calls = len(successful_result["choices"][0]["message"]["tool_calls"]) > 0
+            assert valid_tool_calls
+        else:
+            assert valid_content
+
+def test_vertexai_claude_batch_get_results(vertexai_claude_batch: VertexAIClaudeChatCompletionBatch, monkeypatch):
+    vertexai.init(project=GCP_PROJECT, location=GCP_LOCATION_CLAUDE)
+
+    monkeypatch.setattr(vertexai_claude_batch, 'id', VERTEX_AI_COMPLETED_BATCH_ID_CLAUDE)
+    successful_results, unsuccessful_results = vertexai_claude_batch.get_results()
+    
+    assert len(successful_results) > 0
+    assert len(unsuccessful_results) == 0
+
+    for successful_result in successful_results:
+        assert successful_result["custom_id"] is not None
+        assert successful_result["choices"] is not None
+        assert len(successful_result["choices"]) > 0
+        valid_content = successful_result["choices"][0]["message"]["content"] is not None
+        tool_calls_in_response = "tool_calls" in successful_result["choices"][0]["message"]
+        if tool_calls_in_response:
+            valid_tool_calls = len(successful_result["choices"][0]["message"]["tool_calls"]) > 0
+            assert valid_tool_calls
+        else:
+            assert valid_content
 
 @pytest.mark.slow
-def test_vertexai_llama_batch_start(vertexai_llama_batch: VertexAILlamaChatCompletionBatch):
+@pytest.mark.parametrize("test_data_file", ["chat_completion_batch_llama.jsonl"], indirect=True)
+def test_vertexai_llama_batch_start(test_data_file: str):
+    vertexai_llama_batch = VertexAILlamaChatCompletionBatch(
+        file=test_data_file,
+        model=llama_model,
+        gcp_project=GCP_PROJECT,
+        bigquery_input_dataset=BIGQUERY_INPUT_DATASET,
+        bigquery_output_dataset=BIGQUERY_OUTPUT_DATASET
+    )
     vertexai_llama_batch.start()
     assert vertexai_llama_batch.platform_batch_id is not None
 

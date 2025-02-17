@@ -79,12 +79,13 @@ batch = chat_completion_batch(
 
 You can also use the partner models available in VertexAI. Claude from Anthropic and Llama from Meta are available in VertexAI. You need to enable them in below links before using them. 
 
-- [Claude 3.5 Sonnet v2](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-3-5-sonnet-v2){:target="_blank"}, [Claude 3.5 Haiku](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-3-5-haiku){:target="_blank"}, [Llama 3.1 models](https://console.cloud.google.com/vertex-ai/publishers/meta/model-garden/llama-3.1-405b-instruct-maas){:target="_blank"}
+- [Claude 3.5 Sonnet v2](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-3-5-sonnet-v2){:target="_blank"}, [Claude 3.5 Haiku](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-3-5-haiku){:target="_blank"}, [Llama 3.1 models](https://console.cloud.google.com/vertex-ai/publishers/meta/model-garden/llama-3.1-405b-instruct-maas){:target="_blank"}, [Llama 3.3 70B](https://console.cloud.google.com/vertex-ai/publishers/meta/model-garden/llama-3.3-70b-instruct-maas){:target="_blank"}
 
 Available models:
 
 - Claude 3.5 Sonnet v2 (claude-3-5-sonnet-v2@20241022)
 - Claude 3.5 Haiku (claude-3-5-haiku@20241022)
 - Llama 3.1 405B (llama-3.1-405b-instruct-maas)
+- Llama 3.3 70B (llama-3.3-70b-instruct-maas)
 - Llama 3.1 70B (llama-3.1-70b-instruct-maas)
 - Llama 3.1 8B (llama-3.1-8b-instruct-maas)

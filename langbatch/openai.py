@@ -166,6 +166,34 @@ class OpenAIChatCompletionBatch(OpenAIBatch, ChatCompletionBatch):
     def _validate_request(self, request):
         OpenAIChatCompletionRequest(**request)
 
+    # Override the upload batch file method to fix requests for Azure OpenAI
+    def _upload_batch_file(self):
+        if isinstance(self._client, AzureOpenAI):
+            requests = self._get_requests()
+
+            modified_requests = []
+            for request in requests:
+                modified_requests.append(self._fix_request_for_azure(request))
+
+            with jsonlines.open(self._file, mode="w") as writer:
+                writer.write_all(modified_requests)
+
+        # Upload the batch file to OpenAI
+        with open(self._file, "rb") as file:
+            batch_input_file  = self._client.files.create(file=file, purpose="batch")
+            return batch_input_file.id
+
+    def _fix_request_for_azure(self, request):
+        """
+        Azure OpenAI does not support passing None for content field in messages.
+        This function fixes this issue by adding an empty string to the message content.
+        """
+        modified_request = request.copy()
+        for message in modified_request["body"]["messages"]:
+            if message["content"] is None:
+                message["content"] = ""
+        return modified_request
+
 class OpenAIEmbeddingBatch(OpenAIBatch, EmbeddingBatch):
     """
     OpenAIEmbeddingBatch is a class for OpenAI embedding batches.

@@ -4,13 +4,15 @@ import time
 import pytest
 import jsonlines
 import boto3
-from langbatch.bedrock import BedrockClaudeChatCompletionBatch, BedrockNovaChatCompletionBatch, BedrockBatch
+from langbatch.bedrock import BedrockClaudeChatCompletionBatch, BedrockNovaChatCompletionBatch
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir
 from tests.unit.test_config import config
 
-BEDROCK_COMPLETED_PLATFORM_BATCH_ID = config["bedrock"]["BEDROCK_COMPLETED_PLATFORM_BATCH_ID"]
-BEDROCK_COMPLETED_BATCH_ID = config["bedrock"]["BEDROCK_COMPLETED_BATCH_ID"]
+BEDROCK_COMPLETED_PLATFORM_BATCH_ID_NOVA = config["bedrock"]["BEDROCK_COMPLETED_PLATFORM_BATCH_ID_NOVA"]
+BEDROCK_COMPLETED_BATCH_ID_NOVA = config["bedrock"]["BEDROCK_COMPLETED_BATCH_ID_NOVA"]
+BEDROCK_COMPLETED_PLATFORM_BATCH_ID_CLAUDE = config["bedrock"]["BEDROCK_COMPLETED_PLATFORM_BATCH_ID_CLAUDE"]
+BEDROCK_COMPLETED_BATCH_ID_CLAUDE = config["bedrock"]["BEDROCK_COMPLETED_BATCH_ID_CLAUDE"]
 
 service_role = config["bedrock"]["BEDROCK_SERVICE_ROLE"]
 claude_model_name = config["bedrock"]["claude_model"]
@@ -139,8 +141,8 @@ def test_bedrock_batch_get_status(bedrock_claude_batch: BedrockClaudeChatComplet
     with pytest.raises(ValueError, match="Batch not started"):
         bedrock_claude_batch.get_status()
 
-    bedrock_claude_batch.platform_batch_id = BEDROCK_COMPLETED_PLATFORM_BATCH_ID
-    monkeypatch.setattr(bedrock_claude_batch, 'id', BEDROCK_COMPLETED_BATCH_ID)
+    bedrock_claude_batch.platform_batch_id = BEDROCK_COMPLETED_PLATFORM_BATCH_ID_CLAUDE
+    monkeypatch.setattr(bedrock_claude_batch, 'id', BEDROCK_COMPLETED_BATCH_ID_CLAUDE)
     assert bedrock_claude_batch.get_status() == "completed"
     
     bedrock_claude_batch.platform_batch_id = "platform_batch_id-1"
@@ -386,11 +388,26 @@ def test_bedrock_nova_batch_start(bedrock_nova_batch: BedrockNovaChatCompletionB
     time.sleep(5)
     assert bedrock_nova_batch.get_status() == "in_progress"
 
-def test_bedrock_batch_get_results(bedrock_claude_batch: BedrockClaudeChatCompletionBatch, monkeypatch):
-    monkeypatch.setattr(bedrock_claude_batch, 'platform_batch_id', BEDROCK_COMPLETED_PLATFORM_BATCH_ID)
-    monkeypatch.setattr(bedrock_claude_batch, 'id', BEDROCK_COMPLETED_BATCH_ID)
+def test_bedrock_claude_batch_get_results(bedrock_claude_batch: BedrockClaudeChatCompletionBatch, monkeypatch):
+    monkeypatch.setattr(bedrock_claude_batch, 'platform_batch_id', BEDROCK_COMPLETED_PLATFORM_BATCH_ID_CLAUDE)
+    monkeypatch.setattr(bedrock_claude_batch, 'id', BEDROCK_COMPLETED_BATCH_ID_CLAUDE)
     
     successful_results, unsuccessful_results = bedrock_claude_batch.get_results()
+    
+    assert len(successful_results) > 0
+    assert len(unsuccessful_results) == 0
+
+    for successful_result in successful_results:
+        assert successful_result["custom_id"] is not None
+        assert successful_result["choices"] is not None
+        assert len(successful_result["choices"]) > 0
+        assert successful_result["choices"][0]["message"]["content"] is not None
+
+def test_bedrock_nova_batch_get_results(bedrock_nova_batch: BedrockNovaChatCompletionBatch, monkeypatch):
+    monkeypatch.setattr(bedrock_nova_batch, 'platform_batch_id', BEDROCK_COMPLETED_PLATFORM_BATCH_ID_NOVA)
+    monkeypatch.setattr(bedrock_nova_batch, 'id', BEDROCK_COMPLETED_BATCH_ID_NOVA)
+
+    successful_results, unsuccessful_results = bedrock_nova_batch.get_results() 
     
     assert len(successful_results) > 0
     assert len(unsuccessful_results) == 0
