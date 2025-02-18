@@ -11,6 +11,7 @@ from langbatch.ChatCompletionBatch import ChatCompletionBatch
 from langbatch.bigquery_utils import write_data_to_bigquery, read_data_from_bigquery, create_table
 from langbatch.schemas import VertexAIChatCompletionRequest, VertexAILlamaChatCompletionRequest, AnthropicChatCompletionRequest
 from langbatch.claude_utils import convert_request, convert_message
+from langbatch.errors import BatchStartError, BatchStateError
 
 vertexai_state_map = {
     'JOB_STATE_UNSPECIFIED': 'unspecified',
@@ -103,7 +104,7 @@ class VertexAIBatch(Batch):
         data = self._prepare_data()
         status = write_data_to_bigquery(self.gcp_project, self.bigquery_input_dataset, self.id, data, self._field_name)
         if not status:
-            raise ValueError("Error writing data to BigQuery")
+            raise BatchStartError("Error writing data to BigQuery")
         
         return f"bq://{self.gcp_project}.{self.bigquery_input_dataset}.{self.id}"
 
@@ -118,7 +119,7 @@ class VertexAIBatch(Batch):
 
     def start(self):
         if self.platform_batch_id is not None:
-            raise ValueError("Batch already started")
+            raise BatchStateError("Batch already started")
         
         input_dataset = self._upload_batch_file()
         output_dataset_id = self._create_table(self.bigquery_output_dataset)
@@ -127,7 +128,7 @@ class VertexAIBatch(Batch):
     
     def get_status(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         job = BatchPredictionJob(self.platform_batch_id)
         return vertexai_state_map[str(job.state.name)]
@@ -172,7 +173,7 @@ class VertexAIBatch(Batch):
 
     def retry(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         job = BatchPredictionJob(self.platform_batch_id)
         input_dataset = job._gca_resource.input_config.bigquery_source.input_uri

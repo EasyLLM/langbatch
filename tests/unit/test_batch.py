@@ -7,6 +7,7 @@ import jsonlines
 from langbatch.openai import OpenAIChatCompletionBatch
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import *
+from langbatch.errors import BatchValidationError, BatchStorageError
 
 def test_init(batch: OpenAIChatCompletionBatch):
     # check if the id is not None
@@ -24,8 +25,8 @@ def test_init(batch: OpenAIChatCompletionBatch):
         assert isinstance(req, dict)
 
 cases = [
-    ('chat_completion_batch_invalid.jsonl', ValueError, r"Invalid requests: \[.+\]"),
-    ('chat_completion_batch_empty.jsonl', ValueError, r"No requests found in the batch file"),
+    ('chat_completion_batch_invalid.jsonl', BatchValidationError, r"Invalid requests: \[.+\]"),
+    ('chat_completion_batch_empty.jsonl', BatchValidationError, r"No requests found in the batch file"),
 ]
 @pytest.mark.parametrize(
     'test_data_file, expected_error, error_message', 
@@ -178,7 +179,7 @@ def test_load(
     assert loaded_batch.platform_batch_id == batch.platform_batch_id
 
     # Test loading a batch that doesn't exist
-    with pytest.raises(ValueError, match="Batch with id non_existent_batch_id not found"):
+    with pytest.raises(BatchStorageError, match="Batch with id non_existent_batch_id not found"):
         OpenAIChatCompletionBatch.load(storage=storage, id='non_existent_batch_id')
 
 def test_create_results_file_path(batch: OpenAIChatCompletionBatch):

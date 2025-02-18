@@ -11,6 +11,7 @@ from langbatch.vertexai import VertexAIChatCompletionBatch, VertexAILlamaChatCom
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir
 from tests.unit.test_config import config
+from langbatch.errors import BatchStateError
 
 GCP_PROJECT = config["vertexai"]["GCP_PROJECT"]
 GCP_LOCATION = config["vertexai"]["GCP_LOCATION"]
@@ -159,7 +160,7 @@ def test_vertexai_batch_save_and_load(vertexai_batch: VertexAIChatCompletionBatc
     assert loaded_batch.platform_batch_id == vertexai_batch.platform_batch_id
 
 def test_vertexai_batch_get_status(vertexai_batch: VertexAIChatCompletionBatch, monkeypatch):
-    with pytest.raises(ValueError, match="Batch not started"):
+    with pytest.raises(BatchStateError, match="Batch not started"):
         vertexai_batch.get_status()
 
     vertexai_batch.platform_batch_id = VERTEX_AI_COMPLETED_PLATFORM_BATCH_ID

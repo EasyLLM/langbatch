@@ -13,6 +13,7 @@ from langbatch.bigquery_utils import (
 )
 from tests.unit.fixtures import test_data_file, temp_dir
 from tests.unit.test_config import config
+from langbatch.errors import BatchStartError
 
 # Constants for BigQuery interaction
 PROJECT_ID = config["vertexai"]["GCP_PROJECT"]
@@ -76,14 +77,14 @@ def test_write_data_to_bigquery_error():
         {"custom_id": "1", "request": {"contents": [{"role": "user", "parts": {"text": "Give me a recipe for banana bread."}}]}},
         {"custom_id": "2", "request": {"contents": [{"role": "user", "parts": {"text": "Give me a recipe for chocolate cake."}}]}},
     ]
-    with pytest.raises(ValueError, match="Error writing data to BigQuery. Check the GCP project and BigQuery dataset values"):
+    with pytest.raises(BatchStartError, match="Error writing data to BigQuery. Check the GCP project and BigQuery dataset values"):
         write_data_to_bigquery("invalid-project-id", DATASET_ID, TABLE_ID, data)
 
-    with pytest.raises(ValueError, match="Error writing data to BigQuery. Check the GCP project and BigQuery dataset values"):
+    with pytest.raises(BatchStartError, match="Error writing data to BigQuery. Check the GCP project and BigQuery dataset values"):
         write_data_to_bigquery(PROJECT_ID, "invalid-dataset", TABLE_ID, data)
 
-    with pytest.raises(ValueError, match="Error writing data to BigQuery. Check the GCP project and BigQuery dataset values"):
+    with pytest.raises(BatchStartError, match="Error writing data to BigQuery. Check the GCP project and BigQuery dataset values"):
         write_data_to_bigquery(PROJECT_ID, DATASET_ID, "invalid-table", data)
 
-    with pytest.raises(ValueError, match="Error writing data to BigQuery"):
+    with pytest.raises(BatchStartError, match="Error writing data to BigQuery"):
         write_data_to_bigquery(PROJECT_ID, DATASET_ID, TABLE_ID, data)

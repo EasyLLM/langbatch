@@ -9,6 +9,7 @@ from langbatch.ChatCompletionBatch import ChatCompletionBatch
 from langbatch.schemas import AnthropicChatCompletionRequest, OpenAIChatCompletionRequest
 from langbatch.nova_utils import convert_response_nova, convert_request_nova
 from langbatch.claude_utils import convert_request, convert_message
+from langbatch.errors import BatchStateError, BatchResultsError
 
 bedrock_state_map = {
     'Scheduled': 'in_progress',
@@ -111,13 +112,13 @@ class BedrockBatch(Batch):
 
     def start(self):
         if self.platform_batch_id is not None:
-            raise ValueError("Batch already started")
+            raise BatchStateError("Batch already started")
         
         self._create_batch()
     
     def get_status(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         job = self._client.get_model_invocation_job(
             jobIdentifier=self.platform_batch_id
@@ -126,7 +127,7 @@ class BedrockBatch(Batch):
 
     def _download_results_file(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         job_id = self.platform_batch_id.split("/")[-1]
         s3_path = f"{self.id}/{job_id}/input.jsonl.out"
@@ -136,7 +137,7 @@ class BedrockBatch(Batch):
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == "404":
                 return None
-            raise ValueError("Failed to download results file from S3")
+            raise BatchResultsError("Failed to download results file from S3")
         
         data = []
         file_path = Path(f"{job_id}_results.jsonl")
@@ -166,7 +167,7 @@ class BedrockBatch(Batch):
 
     def retry(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         self._create_batch()
 

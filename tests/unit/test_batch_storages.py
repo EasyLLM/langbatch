@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from langbatch.batch_storages import BatchStorage, FileBatchStorage, _is_json_serializable
 from tests.unit.fixtures import test_data_file, temp_dir
+from langbatch.errors import BatchStorageError
 
 @pytest.fixture(params=[FileBatchStorage])
 def batch_storage(request, temp_dir: str) -> BatchStorage:
@@ -96,7 +97,7 @@ def test_batch_storage_save_and_load_pickle(batch_storage: BatchStorage, test_da
     assert loaded_data == test_data
 
 def test_batch_storage_nonexistent_batch(batch_storage: BatchStorage):
-    with pytest.raises(ValueError, match="Batch with id nonexistent_batch not found"):
+    with pytest.raises(BatchStorageError, match="Batch with id nonexistent_batch not found"):
         batch_storage.load("nonexistent_batch")
 
 def test_batch_storage_directory_creation(temp_dir: str):
@@ -138,5 +139,5 @@ def test_file_batch_storage_partial_save(batch_storage: FileBatchStorage):
         json.dump({"platform_batch_id": "xyz"}, f)
 
     # Attempt to load should raise an error due to missing data file
-    with pytest.raises(ValueError, match=f"Batch with id test-1 not found"):
+    with pytest.raises(BatchStorageError, match=f"Batch with id test-1 not found"):
         batch_storage.load("test-1")

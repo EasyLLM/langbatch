@@ -28,7 +28,7 @@ class EmbeddingBatch(Batch):
             An instance of the EmbeddingBatch class.
 
         Raises:
-            ValueError: If the input data is invalid.
+            BatchInitializationError: If the input data is invalid.
 
         Usage:
         ```python

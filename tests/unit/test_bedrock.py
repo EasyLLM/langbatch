@@ -8,6 +8,7 @@ from langbatch.bedrock import BedrockClaudeChatCompletionBatch, BedrockNovaChatC
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir
 from tests.unit.test_config import config
+from langbatch.errors import BatchStateError
 
 BEDROCK_COMPLETED_PLATFORM_BATCH_ID_NOVA = config["bedrock"]["BEDROCK_COMPLETED_PLATFORM_BATCH_ID_NOVA"]
 BEDROCK_COMPLETED_BATCH_ID_NOVA = config["bedrock"]["BEDROCK_COMPLETED_BATCH_ID_NOVA"]
@@ -138,7 +139,7 @@ def test_bedrock_batch_save_and_load(bedrock_claude_batch: BedrockClaudeChatComp
     assert loaded_batch.platform_batch_id == bedrock_claude_batch.platform_batch_id
 
 def test_bedrock_batch_get_status(bedrock_claude_batch: BedrockClaudeChatCompletionBatch, monkeypatch):
-    with pytest.raises(ValueError, match="Batch not started"):
+    with pytest.raises(BatchStateError, match="Batch not started"):
         bedrock_claude_batch.get_status()
 
     bedrock_claude_batch.platform_batch_id = BEDROCK_COMPLETED_PLATFORM_BATCH_ID_CLAUDE

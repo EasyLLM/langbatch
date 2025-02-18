@@ -7,6 +7,7 @@ from langbatch.anthropic import AnthropicChatCompletionBatch
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir
 from tests.unit.test_config import config
+from langbatch.errors import BatchStateError
 
 ANTHROPIC_COMPLETED_PLATFORM_BATCH_ID = config["anthropic"]["ANTHROPIC_COMPLETED_PLATFORM_BATCH_ID"]
 model = config["anthropic"]["model"]
@@ -65,7 +66,7 @@ def test_anthropic_batch_save_and_load(anthropic_batch: AnthropicChatCompletionB
     assert loaded_batch.platform_batch_id == anthropic_batch.platform_batch_id
 
 def test_anthropic_batch_get_status(anthropic_batch: AnthropicChatCompletionBatch, monkeypatch):
-    with pytest.raises(ValueError, match="Batch not started"):
+    with pytest.raises(BatchStateError, match="Batch not started"):
         anthropic_batch.get_status()
 
     anthropic_batch.platform_batch_id = ANTHROPIC_COMPLETED_PLATFORM_BATCH_ID

@@ -29,7 +29,7 @@ class ChatCompletionBatch(Batch):
             An instance of the ChatCompletionBatch class.
 
         Raises:
-            ValueError: If the input data is invalid.
+            BatchInitializationError: If the input data is invalid.
 
         Usage:
         ```python

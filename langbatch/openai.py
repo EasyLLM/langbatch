@@ -8,6 +8,7 @@ from langbatch.Batch import Batch
 from langbatch.schemas import OpenAIChatCompletionRequest, OpenAIEmbeddingRequest
 from langbatch.ChatCompletionBatch import ChatCompletionBatch
 from langbatch.EmbeddingBatch import EmbeddingBatch
+from langbatch.errors import BatchStateError
 
 class OpenAIBatch(Batch):
     """
@@ -62,7 +63,7 @@ class OpenAIBatch(Batch):
 
     def start(self):
         if self.platform_batch_id is not None:
-            raise ValueError("Batch already started")
+            raise BatchStateError("Batch already started")
         
         batch_input_file_id = self._upload_batch_file()
         self._create_batch(batch_input_file_id)
@@ -80,7 +81,7 @@ class OpenAIBatch(Batch):
         ```
         """
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         batch = self._client.batches.cancel(self.platform_batch_id)
         if batch.status == "cancelling" or batch.status == "cancelled":
@@ -90,7 +91,7 @@ class OpenAIBatch(Batch):
         
     def get_status(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         batch = self._client.batches.retrieve(self.platform_batch_id)
         return batch.status
@@ -144,7 +145,7 @@ class OpenAIBatch(Batch):
 
     def retry(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         batch = self._client.batches.retrieve(self.platform_batch_id)
 

@@ -8,6 +8,7 @@ from langbatch.Batch import Batch
 from langbatch.ChatCompletionBatch import ChatCompletionBatch
 from langbatch.schemas import AnthropicChatCompletionRequest
 from langbatch.claude_utils import convert_request, convert_response
+from langbatch.errors import BatchStateError
 
 anthropic_state_map = {
     'in_progress': 'in_progress',
@@ -65,13 +66,13 @@ class AnthropicBatch(Batch):
 
     def start(self):
         if self.platform_batch_id is not None:
-            raise ValueError("Batch already started")
+            raise BatchStateError("Batch already started")
         
         self._create_batch()
     
     def get_status(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         response = self._client.beta.messages.batches.retrieve(
             self.platform_batch_id
@@ -80,7 +81,7 @@ class AnthropicBatch(Batch):
 
     def _download_results_file(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         file_path = self._create_results_file_path()
         with jsonlines.open(file_path, mode='w') as writer:
@@ -108,7 +109,7 @@ class AnthropicBatch(Batch):
 
     def retry(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         self._create_batch()
 

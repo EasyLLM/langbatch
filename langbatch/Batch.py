@@ -12,6 +12,7 @@ from pathlib import Path
 
 import jsonlines
 from langbatch.batch_storages import DATA_PATH, BatchStorage, FileBatchStorage
+from langbatch.errors import BatchInitializationError, BatchError, BatchValidationError
 
 class Batch(ABC):
     """
@@ -83,7 +84,7 @@ class Batch(ABC):
         file_path = cls._create_batch_file_from_requests(requests)
         
         if file_path is None:
-            raise ValueError("Failed to create batch. Check the input data.")
+            raise BatchInitializationError("Failed to create batch. Check the input data.")
         
         return cls(file_path, **batch_kwargs)
 
@@ -102,7 +103,7 @@ class Batch(ABC):
             An instance of the Batch class.
 
         Raises:
-            ValueError: If the input data is invalid.
+            BatchInitializationError: If the input data is invalid.
 
         Usage:
         ```python
@@ -133,7 +134,7 @@ class Batch(ABC):
         file_path = cls._create_batch_file_from_requests(requests)
 
         if file_path is None:
-            raise ValueError("Failed to create batch. Check the input data.")
+            raise BatchInitializationError("Failed to create batch. Check the input data.")
         
         return cls(file_path, **batch_kwargs)
 
@@ -258,7 +259,7 @@ class Batch(ABC):
                     requests.append(obj)
         except:
             logging.error(f"Error reading requests from batch file", exc_info=True)
-            raise ValueError("Error reading requests from batch file")
+            raise BatchError("Error reading requests from batch file")
 
         return requests
 
@@ -285,10 +286,10 @@ class Batch(ABC):
                 invalid_requests.append(request['custom_id'])
 
         if len(invalid_requests) > 0:
-            raise ValueError(f"Invalid requests: {invalid_requests}")
+            raise BatchValidationError(f"Invalid requests: {invalid_requests}")
         
         if len(self._get_requests()) == 0:
-            raise ValueError("No requests found in the batch file")
+            raise BatchValidationError("No requests found in the batch file")
     
     def _create_results_file_path(self):
         results_dir = Path(DATA_PATH) / "results"

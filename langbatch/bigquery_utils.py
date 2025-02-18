@@ -5,6 +5,7 @@ from google.protobuf import descriptor_pb2
 from google.cloud import bigquery
 from langbatch.record_pb2 import BatchRecord
 from langbatch.record_llama_pb2 import BatchRecord as BatchRecordLlama
+from langbatch.errors import BatchStartError
 import time
 
 def create_row_data(custom_id: str, text: str, field_name: str = "request"):
@@ -31,7 +32,7 @@ def write_data_to_bigquery(project_id: str, dataset_id: str, table_id: str, data
         stream_name = write_stream.name
     except:
         logging.error("Error creating write stream", exc_info=True)
-        raise ValueError("Error writing data to BigQuery. Check the GCP project and BigQuery dataset values")
+        raise BatchStartError("Error writing data to BigQuery. Check the GCP project and BigQuery dataset values")
 
     try:
         # Create a template with fields needed for the first request.

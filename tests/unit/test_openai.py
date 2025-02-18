@@ -8,6 +8,7 @@ from langbatch.openai import OpenAIChatCompletionBatch, OpenAIEmbeddingBatch
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir, batch, embedding_batch
 from tests.unit.test_config import config
+from langbatch.errors import BatchStateError
 
 OPENAI_COMPLETED_PLATFORM_BATCH_ID = config["openai"]["OPENAI_COMPLETED_PLATFORM_BATCH_ID"]
 OPENAI_EMBEDDING_COMPLETED_BATCH_ID = config["openai"]["OPENAI_EMBEDDING_COMPLETED_BATCH_ID"]
@@ -69,7 +70,7 @@ def test_openai_batch_save_and_load(batch: OpenAIChatCompletionBatch, temp_dir):
     assert loaded_batch.platform_batch_id == batch.platform_batch_id
 
 def test_openai_batch_get_status(batch: OpenAIChatCompletionBatch, monkeypatch):
-    with pytest.raises(ValueError, match="Batch not started"):
+    with pytest.raises(BatchStateError, match="Batch not started"):
         batch.get_status()
 
     batch.platform_batch_id = OPENAI_COMPLETED_PLATFORM_BATCH_ID

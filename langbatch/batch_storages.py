@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, Tuple
 import pickle
 from langbatch.utils import get_data_path
+from langbatch.errors import BatchStorageError
 
 DATA_PATH = get_data_path()
 
@@ -135,9 +136,9 @@ class FileBatchStorage(BatchStorage):
         elif pkl_file.is_file():
             meta_file = pkl_file
         else:
-            raise ValueError(f"Batch with id {id} not found")
+            raise BatchStorageError(f"Batch with id {id} not found")
 
         if not data_file.is_file():
-            raise ValueError(f"Batch with id {id} not found")
+            raise BatchStorageError(f"Batch with id {id} not found")
         
         return data_file, meta_file
