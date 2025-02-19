@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langbatch"
-version = "0.1.1"
+version = "0.1.2"
 description = "LangBatch is a python package with unified API for AI batch processing workloads. Supports OpenAI, Anthropic, Azure OpenAI, Vertex AI"
 authors = ["KarthikeyanVijayanEasyLLM <karthikeyan.vijayan@easyllm.tech>"]
 readme = "README.md"
