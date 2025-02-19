@@ -1,3 +1,3 @@
-{"custom_id": "6d292082-5c65-4b70-9900-a1418e49d5e7", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-ada-002", "input": "I did not have a good day yesterday"}}
-{"custom_id": "b8bf1ed2-2ec3-45f9-81b0-97813ad70ae4", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-ada-002", "input": "I am feeling good today"}}
-{"custom_id": "3cb5b179-464f-4ebe-b405-531caba76dd7", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-ada-002", "input": "I am feeling okay today"}}
+{"custom_id": "6d292082-5c65-4b70-9900-a1418e49d5e7", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "I did not have a good day yesterday"}}
+{"custom_id": "b8bf1ed2-2ec3-45f9-81b0-97813ad70ae4", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "I am feeling good today"}}
+{"custom_id": "3cb5b179-464f-4ebe-b405-531caba76dd7", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "I am feeling okay today"}}

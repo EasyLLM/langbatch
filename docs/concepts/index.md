@@ -1,6 +1,6 @@
 # 📚 Core Concepts
 
-LangBatch gives you building blocks to create pipelines for AI inference. The core concepts are:
+LangBatch gives you building blocks to create pipelines for Batch AI inference. The core concepts are:
 
 <div class="grid cards" markdown>
 
@@ -11,9 +11,5 @@ LangBatch gives you building blocks to create pipelines for AI inference. The co
 - [Pipeline](./pipeline/index.md)
 
     How to create a batch AI inference pipeline?
-
-- [Providers](./providers/index.md)
-
-    Provider based implementations
 
 </div>

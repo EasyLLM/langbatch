@@ -1,15 +1,16 @@
-import os
 from pathlib import Path
-from pydantic import BaseModel
 import time
 import pytest
 import jsonlines
+import json
 from langbatch.anthropic import AnthropicChatCompletionBatch
 from langbatch.batch_storages import FileBatchStorage
 from tests.unit.fixtures import test_data_file, temp_dir
-from anthropic.types.beta.messages.beta_message_batch_succeeded_result import BetaMessageBatchSucceededResult
+from tests.unit.test_config import config
+from langbatch.errors import BatchStateError
 
-ANTHROPIC_COMPLETED_PLATFORM_BATCH_ID = os.environ.get('ANTHROPIC_COMPLETED_PLATFORM_BATCH_ID')
+ANTHROPIC_COMPLETED_PLATFORM_BATCH_ID = config["anthropic"]["ANTHROPIC_COMPLETED_PLATFORM_BATCH_ID"]
+model = config["anthropic"]["model"]
 
 @pytest.fixture
 def anthropic_batch(test_data_file: str):
@@ -65,7 +66,7 @@ def test_anthropic_batch_save_and_load(anthropic_batch: AnthropicChatCompletionB
     assert loaded_batch.platform_batch_id == anthropic_batch.platform_batch_id
 
 def test_anthropic_batch_get_status(anthropic_batch: AnthropicChatCompletionBatch, monkeypatch):
-    with pytest.raises(ValueError, match="Batch not started"):
+    with pytest.raises(BatchStateError, match="Batch not started"):
         anthropic_batch.get_status()
 
     anthropic_batch.platform_batch_id = ANTHROPIC_COMPLETED_PLATFORM_BATCH_ID
@@ -83,7 +84,7 @@ def test_anthropic_batch_convert_request(anthropic_batch: AnthropicChatCompletio
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": "Hello, how are you?"}
             ],
-            "model": "claude-3-sonnet-20240229",
+            "model": model,
             "temperature": 0.7,
             "max_tokens": 100,
             "tools": [
@@ -108,7 +109,7 @@ def test_anthropic_batch_convert_request(anthropic_batch: AnthropicChatCompletio
     converted = anthropic_batch._convert_request(request)
     
     assert converted["custom_id"] == "test_id"
-    assert converted["params"]["model"] == "claude-3-sonnet-20240229"
+    assert converted["params"]["model"] == model
     assert converted["params"]["messages"][0]["role"] == "user"
     assert converted["params"]["messages"][0]["content"][0]["type"] == "text"
     assert converted["params"]["messages"][0]["content"][0]["text"] == "Hello, how are you?"
@@ -134,7 +135,7 @@ def test_anthropic_batch_convert_response(anthropic_batch: AnthropicChatCompleti
                 "id":"msg_014VwiXbi91y3JMjcpyGBHX5",
                 "type":"message",
                 "role":"assistant",
-                "model": "claude-3-5-sonnet-20240620",
+                "model": model,
                 "stop_reason": "end_turn",
                 "stop_sequence": None,
                 "usage": {"input_tokens": 11, "output_tokens": 36}
@@ -153,11 +154,11 @@ def test_anthropic_batch_convert_response(anthropic_batch: AnthropicChatCompleti
     assert converted["id"] == "test_id"
     assert converted["custom_id"] == "test_id"
     assert converted["response"]["body"]["choices"][0]["message"]["role"] == "assistant"
-    assert converted["response"]["body"]["choices"][0]["message"]["content"] == content
+    assert converted["response"]["body"]["choices"][0]["message"]["content"] == content[0]
     assert converted["response"]["body"]["usage"]["prompt_tokens"] == 11
     assert converted["response"]["body"]["usage"]["completion_tokens"] == 36
     assert converted["response"]["body"]["usage"]["total_tokens"] == 47
-    assert converted["response"]["body"]["model"] == "claude-3-5-sonnet-20240620"
+    assert converted["response"]["body"]["model"] == model
     assert converted["error"] is None
 
     content = [
@@ -175,13 +176,24 @@ def test_anthropic_batch_convert_response(anthropic_batch: AnthropicChatCompleti
     response["result"]["message"]["content"] = content
     # custom_response = CustomResponse(**response)
     converted = anthropic_batch._convert_response(response)
-    assert converted["response"]["body"]["choices"][0]["message"]["content"] == [content[0]]
+    assert converted["response"]["body"]["choices"][0]["message"]["content"] == content[0]
     assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["id"] == content[1]["id"]
     assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["function"]["name"] == content[1]["name"]
-    assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"] == content[1]["input"]
+    assert converted["response"]["body"]["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"] == json.dumps(content[1]["input"])
 
 @pytest.mark.slow
 def test_anthropic_batch_start(anthropic_batch: AnthropicChatCompletionBatch):
+    requests = anthropic_batch._get_requests()
+
+    converted_requests = []
+    for req in requests:
+        new_req = req.copy()
+        new_req["body"]["model"] = model
+        converted_requests.append(new_req)
+
+    with jsonlines.open(anthropic_batch._file, mode="w") as writer:
+        writer.write_all(converted_requests)
+
     anthropic_batch.start()
     assert anthropic_batch.platform_batch_id is not None
 

@@ -61,3 +61,17 @@ class AnthropicChatCompletionRequest(BaseModel):
     tools: Optional[Iterable[ChatCompletionToolParam]] = None
     parallel_tool_calls: Optional[bool] = None
     user: Optional[str] = None
+
+class VertexAILlamaChatCompletionRequest(BaseModel):
+    messages: Iterable[ChatCompletionMessageParam]
+    model: Union[str, ChatModel]
+    frequency_penalty: Optional[float] = None
+    logit_bias: Optional[Dict[str, int]] = None
+    max_tokens: Optional[int] = None
+    parallel_tool_calls: Optional[bool] = None
+    presence_penalty: Optional[float] = None
+    stop: Optional[Union[str, List[str]]] = None
+    temperature: Optional[float] = None
+    tool_choice: Optional[Literal["none", "auto"]] = None
+    tools: Optional[Iterable[ChatCompletionToolParam]] = None
+    top_p: Optional[float] = None

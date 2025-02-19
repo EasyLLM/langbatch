@@ -1,13 +1,14 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import tempfile
 from pathlib import Path
 
 import jsonlines
-from openai import OpenAI
+from openai import OpenAI, AzureOpenAI
 from langbatch.Batch import Batch
 from langbatch.schemas import OpenAIChatCompletionRequest, OpenAIEmbeddingRequest
 from langbatch.ChatCompletionBatch import ChatCompletionBatch
 from langbatch.EmbeddingBatch import EmbeddingBatch
+from langbatch.errors import BatchStateError
 
 class OpenAIBatch(Batch):
     """
@@ -16,7 +17,7 @@ class OpenAIBatch(Batch):
     """
     _url: str = "/v1/chat/completions"
 
-    def __init__(self, file: str, client: OpenAI = OpenAI()) -> None:
+    def __init__(self, file: str, client: Optional[OpenAI | AzureOpenAI] = None) -> None:
         """
         Initialize the OpenAIBatch class.
 
@@ -37,7 +38,7 @@ class OpenAIBatch(Batch):
         ```
         """
         super().__init__(file)
-        self._client = client
+        self._client = client or OpenAI()
 
     @classmethod
     def _get_init_args(cls, meta_data) -> Dict[str, Any]:
@@ -62,7 +63,7 @@ class OpenAIBatch(Batch):
 
     def start(self):
         if self.platform_batch_id is not None:
-            raise ValueError("Batch already started")
+            raise BatchStateError("Batch already started")
         
         batch_input_file_id = self._upload_batch_file()
         self._create_batch(batch_input_file_id)
@@ -80,7 +81,7 @@ class OpenAIBatch(Batch):
         ```
         """
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         batch = self._client.batches.cancel(self.platform_batch_id)
         if batch.status == "cancelling" or batch.status == "cancelled":
@@ -90,7 +91,7 @@ class OpenAIBatch(Batch):
         
     def get_status(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         batch = self._client.batches.retrieve(self.platform_batch_id)
         return batch.status
@@ -144,7 +145,7 @@ class OpenAIBatch(Batch):
 
     def retry(self):
         if self.platform_batch_id is None:
-            raise ValueError("Batch not started")
+            raise BatchStateError("Batch not started")
         
         batch = self._client.batches.retrieve(self.platform_batch_id)
 
@@ -165,6 +166,34 @@ class OpenAIChatCompletionBatch(OpenAIBatch, ChatCompletionBatch):
 
     def _validate_request(self, request):
         OpenAIChatCompletionRequest(**request)
+
+    # Override the upload batch file method to fix requests for Azure OpenAI
+    def _upload_batch_file(self):
+        if isinstance(self._client, AzureOpenAI):
+            requests = self._get_requests()
+
+            modified_requests = []
+            for request in requests:
+                modified_requests.append(self._fix_request_for_azure(request))
+
+            with jsonlines.open(self._file, mode="w") as writer:
+                writer.write_all(modified_requests)
+
+        # Upload the batch file to OpenAI
+        with open(self._file, "rb") as file:
+            batch_input_file  = self._client.files.create(file=file, purpose="batch")
+            return batch_input_file.id
+
+    def _fix_request_for_azure(self, request):
+        """
+        Azure OpenAI does not support passing None for content field in messages.
+        This function fixes this issue by adding an empty string to the message content.
+        """
+        modified_request = request.copy()
+        for message in modified_request["body"]["messages"]:
+            if message["content"] is None:
+                message["content"] = ""
+        return modified_request
 
 class OpenAIEmbeddingBatch(OpenAIBatch, EmbeddingBatch):
     """

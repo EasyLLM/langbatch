@@ -116,12 +116,12 @@ batch.save()
 
 # Save Batch to Custom Storage
 storage = CustomStorage()
-batch = OpenAIChatCompletionBatch("data.jsonl", storage=storage)
-batch.save()
+batch = OpenAIChatCompletionBatch("data.jsonl")
+batch.save(storage=storage)
 ```
 
 !!! info
-    By default, File based storage will be used to save the batch. You can also pass a custom storage instance when initializing the batch.
+    By default, File based storage will be used to save the batch. You can also pass a custom storage instance when initializing the batch. For example, you can save the batch to a cloud storage.
 
 ## Load Batch
 
@@ -135,3 +135,16 @@ batch = OpenAIChatCompletionBatch.load("batch_id")
 storage = CustomStorage()
 batch = OpenAIChatCompletionBatch.load("batch_id", storage=storage)
 ```
+
+You can pass additional kwargs to the batch when loading the batch.
+
+```python
+from openai import OpenAI
+client = OpenAI(api_key="your-api-key", base_url="your-base-url")
+
+# Load batch
+batch = OpenAIChatCompletionBatch.load("batch_id", batch_kwargs={"client": client})
+```
+
+???+ info
+    This is needed only for provider classes where you usually pass client objects when initializing the batch. Usually for OpenAI API supported providers like Azure OpenAI.

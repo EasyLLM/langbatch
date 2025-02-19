@@ -4,10 +4,11 @@ import jsonlines
 
 from langbatch.openai import OpenAIEmbeddingBatch
 from tests.unit.fixtures import *
+from langbatch.errors import BatchValidationError
 
 cases = [
-    ('embedding_batch_invalid.jsonl', ValueError, r"Invalid requests: \[.+\]"),
-    ('embedding_batch_empty.jsonl', ValueError, r"No requests found in the batch file"),
+    ('embedding_batch_invalid.jsonl', BatchValidationError, r"Invalid requests: \[.+\]"),
+    ('embedding_batch_empty.jsonl', BatchValidationError, r"No requests found in the batch file"),
 ]
 @pytest.mark.parametrize(
     'test_data_file, expected_error, error_message', 

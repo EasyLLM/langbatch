@@ -16,14 +16,15 @@ Core LangBatch package only supports OpenAI and OpenAI compatible providers. For
 pip install langbatch[Anthropic]
 ```
 
-This will install the dependencies for using the Anthropic with LangBatch.
-
-- Vertex AI:
+- GCP Vertex AI:
 ```bash
 pip install langbatch[VertexAI]
 ```
 
-This will install the dependencies for using the Vertex AI with LangBatch.
+- AWS Bedrock:
+```bash
+pip install langbatch[Bedrock]
+```
 
 ## Utility and Integration Dependencies
 These are optional dependencies for using other utilities and integrations.
@@ -60,4 +61,4 @@ pip install -e .
 
 This will enable you to run LangBatch locally from the source code with immediate effect on changes without needing to reinstall.
 
-Next, let's create a OpenAIChatCompletionBatch object and perform batch generations.
+Next, let's create a ChatCompletionBatch object and perform batch generations.

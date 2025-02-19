@@ -1,6 +1,12 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 # Introduction
 
-LangBatch is a Python library for large scale AI generation using batch APIs from providers like OpenAI, Anthropic, Azure OpenAI, GCP Vertex AI, etc.  
+LangBatch is a unified API for accessing Batch APIs from providers like OpenAI, Anthropic, Azure OpenAI, GCP Vertex AI, AWS Bedrock, etc.  
 
 <div class="grid cards" markdown>
 
@@ -13,10 +19,9 @@ LangBatch is a Python library for large scale AI generation using batch APIs fro
 
 - Features:
 
-    * Unified API to access Batch API from different AI providers.
-    * Standarized OpenAI format for requests and responses
-    * Utilities for handling the complete lifecycle of a batch job: Creating, Starting, Monitoring, Retrying and Processing Completed
-    * Convert incoming requests into batch jobs
+    * OpenAI format for requests and responses
+    * Utilities for handling the complete lifecycle of a batch job: Creating, Starting, Monitoring, Retrying and Processing
+    * Pipeline to convert stream of incoming requests into batch jobs
 </div>
 
 ## Quick Links
@@ -25,7 +30,7 @@ LangBatch is a Python library for large scale AI generation using batch APIs fro
 
     Learn the basics and become familiar with the LangBatch and how to utilize it.
 
-    [:octicons-arrow-right-24: Get Started](getstarted/index.md)
+    [:octicons-arrow-right-24: Get Started](getstarted/install.md)
 
 - 📚 **Core Concepts**
 
@@ -45,6 +50,6 @@ LangBatch is a Python library for large scale AI generation using batch APIs fro
 
     Technical descriptions of how LangBatch classes and methods work.
 
-    [:octicons-arrow-right-24: References](references/index.md)
+    [:octicons-arrow-right-24: References](references/Batch.md)
 
 </div>

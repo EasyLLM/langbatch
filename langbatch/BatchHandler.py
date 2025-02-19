@@ -159,9 +159,13 @@ class BatchHandler:
             retried_batches = 0
             for batch_id in self.queues["processing"]:
                 if self.batch_storage:
-                    batch = self.batch_type.load(batch_id, storage = self.batch_storage)
+                    batch = self.batch_type.load(
+                        batch_id, 
+                        storage = self.batch_storage,
+                        batch_kwargs = self.batch_kwargs
+                    )
                 else:
-                    batch = self.batch_type.load(batch_id)
+                    batch = self.batch_type.load(batch_id, batch_kwargs = self.batch_kwargs)
                 status = BatchStatus(await asyncio.to_thread(batch.get_status))
                 
                 if status == BatchStatus.COMPLETED:
@@ -181,9 +185,13 @@ class BatchHandler:
                 started_batches = 0
                 for batch_id in self.queues["pending"]:
                     if self.batch_storage:
-                        batch = self.batch_type.load(batch_id, storage=self.batch_storage)
+                        batch = self.batch_type.load(
+                            batch_id, 
+                            storage=self.batch_storage, 
+                            batch_kwargs=self.batch_kwargs
+                        )
                     else:
-                        batch = self.batch_type.load(batch_id)
+                        batch = self.batch_type.load(batch_id, batch_kwargs=self.batch_kwargs)
                     await self.start_batch(batch)
                     started_batches += 1
 

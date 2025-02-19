@@ -5,6 +5,7 @@ from typing import Dict, Literal
 from langbatch.Batch import Batch
 from langbatch.BatchHandler import BatchHandler
 from langbatch.request_queues import RequestQueue
+from langbatch.errors import BatchInitializationError
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,7 @@ class BatchDispatcher:
                 batch = await asyncio.to_thread(batch_class.create_from_requests, requests, batch_kwargs)
             self.last_batch_time = time.time()
             await self._dispatch_batch(batch)
-        except ValueError as e:
+        except BatchInitializationError as e:
             logger.warning(f"Failed to create batch: {str(e)}")
 
     async def _dispatch_batch(self, batch: Batch):
